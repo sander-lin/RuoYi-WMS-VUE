@@ -98,5 +98,5 @@ jobs:
           script: |
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ${{ env.REGISTRY }}/${{ env.REPO }}:${{ github.sha }}
-            docker rm -f ruoyi-wms | true 
-            docker run -d -p 666:80 --name ruoyi-wms ${{ env.REGISTRY }}/${{ env.REPO }}:${{ github.sha }}
+            docker rm -f ruoyi-wms-vue | true 
+            docker run -d -p 666:80 --name ruoyi-wms-vue ${{ env.REGISTRY }}/${{ env.REPO }}:${{ github.sha }}
