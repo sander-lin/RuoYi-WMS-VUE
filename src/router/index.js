@@ -140,7 +140,7 @@ export const dynamicRoutes = [
         path: 'index',
         component: () => import('@/views/system/oss/config'),
         name: 'OssConfig',
-        meta: { title: '配置管理', activeMenu: '/system/oss'}
+        meta: { title: '配置管理', activeMenu: '/system/oss' }
       }
     ]
   },
@@ -162,6 +162,7 @@ export const dynamicRoutes = [
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.VITE_APP_CONTEXT_PATH),
+  mode: 'hash',
   routes: constantRoutes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
