@@ -13,7 +13,7 @@
           :rules="rules"
         >
           <el-row :gutter="24">
-            <el-col :span="11">
+            <!-- <el-col :span="11">
               <el-form-item label="入库单号" prop="receiptOrderNo">
                 <el-input
                   class="w200"
@@ -22,8 +22,8 @@
                   :disabled="form.id"
                 ></el-input>
               </el-form-item>
-            </el-col>
-            <el-col :span="6">
+            </el-col> -->
+            <!-- <el-col :span="6">
               <el-form-item label="仓库" prop="warehouseId">
                 <el-select
                   v-model="form.warehouseId"
@@ -39,8 +39,8 @@
                   />
                 </el-select>
               </el-form-item>
-            </el-col>
-            <el-col :span="6">
+            </el-col> -->
+            <!-- <el-col :span="6">
               <el-form-item label="库区" prop="areaId">
                 <el-popover
                   placement="left"
@@ -72,21 +72,7 @@
                   </template>
                 </el-popover>
               </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="24">
-            <el-col :span="11">
-              <el-form-item label="入库类型" prop="receiptOrderType">
-                <el-radio-group v-model="form.receiptOrderType">
-                  <el-radio-button
-                    v-for="item in wms_receipt_type"
-                    :key="item.value"
-                    :label="item.value"
-                    >{{ item.label }}</el-radio-button
-                  >
-                </el-radio-group>
-              </el-form-item>
-            </el-col>
+            </el-col> -->
             <el-col :span="6">
               <el-form-item label="供应商" prop="merchantId">
                 <el-select
@@ -104,14 +90,29 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+          </el-row>
+          <el-row :gutter="24">
+            <!-- <el-col :span="11">
+              <el-form-item label="入库类型" prop="receiptOrderType">
+                <el-radio-group v-model="form.receiptOrderType">
+                  <el-radio-button
+                    v-for="item in wms_receipt_type"
+                    :key="item.value"
+                    :label="item.value"
+                    >{{ item.label }}</el-radio-button
+                  >
+                </el-radio-group>
+              </el-form-item>
+            </el-col> -->
+
+            <!-- <el-col :span="6">
               <el-form-item label="订单号" prop="orderNo">
                 <el-input
                   v-model="form.orderNo"
                   placeholder="请输入订单号"
                 ></el-input>
               </el-form-item>
-            </el-col>
+            </el-col> -->
           </el-row>
           <el-row :gutter="24">
             <el-col :span="11">
@@ -126,7 +127,7 @@
                 ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <!-- <el-col :span="6">
               <div style="display: flex; align-items: start">
                 <el-form-item label="金额" prop="payableAmount">
                   <el-input-number
@@ -154,7 +155,7 @@
                   :disabled="true"
                 ></el-input-number>
               </el-form-item>
-            </el-col>
+            </el-col> -->
           </el-row>
         </el-form>
       </el-card>
@@ -223,7 +224,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="库区" prop="itemSku.skuName" width="200">
+            <!-- <el-table-column label="库区" prop="itemSku.skuName" width="200">
               <template #default="{ row }">
                 <el-popover
                   placement="left"
@@ -252,7 +253,7 @@
                   </template>
                 </el-popover>
               </template>
-            </el-table-column>
+            </el-table-column> -->
             <el-table-column label="数量" prop="quantity" width="180">
               <template #default="scope">
                 <el-input-number
@@ -275,7 +276,7 @@
                 ></el-input-number>
               </template>
             </el-table-column>
-            <el-table-column label="批号" prop="batchNo" width="150">
+            <!-- <el-table-column label="批号" prop="batchNo" width="150">
               <template #default="scope">
                 <el-input v-model="scope.row.batchNo"></el-input>
               </template>
@@ -303,7 +304,7 @@
                   />
                 </div>
               </template>
-            </el-table-column>
+            </el-table-column> -->
             <el-table-column
               label="操作"
               width="100"
@@ -336,15 +337,15 @@
     <div class="footer-global">
       <div class="btn-box">
         <div>
-          <el-button @click="doWarehousing" type="primary" class="ml10"
+          <!-- <el-button @click="doWarehousing" type="primary" class="ml10"
             >完成入库</el-button
           >
           <el-button @click="updateToInvalid" type="danger" v-if="form.id"
             >作废</el-button
-          >
+          > -->
         </div>
         <div>
-          <el-button @click="save" type="primary">暂存</el-button>
+          <el-button @click="doWarehousing" type="primary">完成入库</el-button>
           <el-button @click="cancel" class="mr10">取消</el-button>
         </div>
       </div>
@@ -389,8 +390,8 @@ const initFormData = {
   payableAmount: undefined,
   receiptOrderStatus: 0,
   remark: undefined,
-  warehouseId: undefined,
-  areaId: undefined,
+  warehouseId: "1828364740028174337",
+  areaId: "1829397566185992193",
   totalQuantity: 0,
   details: [],
 };
@@ -410,9 +411,9 @@ const data = reactive({
     receiptOrderNo: [
       { required: true, message: "入库单号不能为空", trigger: "blur" },
     ],
-    receiptOrderType: [
-      { required: true, message: "入库类型不能为空", trigger: "change" },
-    ],
+    // receiptOrderType: [
+    //   { required: true, message: "入库类型不能为空", trigger: "change" },
+    // ],
     receiptOrderStatus: [
       { required: true, message: "入库状态不能为空", trigger: "change" },
     ],
@@ -428,7 +429,7 @@ const cancel = async () => {
   close();
 };
 const close = () => {
-  const obj = { path: "/inventory/receiptOrder" };
+  const obj = { path: "/inventory" };
   proxy?.$tab.closeOpenPage(obj);
 };
 const skuSelectShow = ref(false);
