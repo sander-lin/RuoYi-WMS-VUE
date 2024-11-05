@@ -25,10 +25,7 @@
     </el-card>
 
     <el-card class="mt20">
-      <el-row :gutter="10" class="mb8" type="flex" justify="space-between">
-        <el-col :span="6"
-          ><span style="font-size: large">物流渠道列表</span></el-col
-        >
+      <el-row :gutter="10" class="mb8" type="flex" justify="flex-start">
         <el-col :span="1.5">
           <el-button
             type="primary"
@@ -36,7 +33,7 @@
             icon="Plus"
             @click="handleAdd"
             v-hasPermi="['wms:logistics:add']"
-            >新增</el-button
+            >新增物流渠道</el-button
           >
         </el-col>
       </el-row>
@@ -76,7 +73,7 @@
             >
             <el-button
               link
-              type="primary"
+              type="danger"
               icon="Delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['wms:logistics:remove']"
@@ -87,7 +84,7 @@
       </el-table>
     </el-card>
     <!-- 添加或修改物流渠道对话框 -->
-    <el-drawer :title="title" v-model="open" size="50%" append-to-body>
+    <el-dialog :title="title" v-model="open" size="50%" append-to-body>
       <el-form
         ref="logisticsRef"
         :model="form"
@@ -109,7 +106,7 @@
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
-    </el-drawer>
+    </el-dialog>
   </div>
 </template>
 
