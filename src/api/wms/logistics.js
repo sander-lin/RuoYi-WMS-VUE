@@ -3,7 +3,7 @@ import request from "@/utils/request";
 // 查询物流渠道列表
 export function listLogisticsPage(query) {
   return request({
-    url: "/wms/logistics/list",
+    url: "/wms/channel/list",
     method: "get",
     params: query,
   });
@@ -12,7 +12,7 @@ export function listLogisticsPage(query) {
 // 查询物流渠道列表
 export function listLogistics(query) {
   return request({
-    url: "/wms/logistics/listNoPage",
+    url: "/wms/channel/listNoPage",
     method: "get",
     params: query,
   });
@@ -21,7 +21,7 @@ export function listLogistics(query) {
 // 查询物流渠道详细
 export function getLogistics(id) {
   return request({
-    url: "/wms/logistics/" + id,
+    url: "/wms/channel/" + id,
     method: "get",
   });
 }
@@ -29,7 +29,7 @@ export function getLogistics(id) {
 // 新增物流渠道
 export function addLogistics(data) {
   return request({
-    url: "/wms/logistics",
+    url: "/wms/channel",
     method: "post",
     data: data,
   });
@@ -38,7 +38,7 @@ export function addLogistics(data) {
 // 修改物流渠道
 export function updateLogistics(data) {
   return request({
-    url: "/wms/logistics",
+    url: "/wms/channel",
     method: "put",
     data: data,
   });
@@ -47,7 +47,7 @@ export function updateLogistics(data) {
 // 删除物流渠道
 export function delLogistics(id) {
   return request({
-    url: "/wms/logistics/" + id,
+    url: "/wms/channel/" + id,
     method: "delete",
   });
 }
