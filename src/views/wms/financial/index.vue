@@ -14,9 +14,7 @@
             clearable
           >
             <el-option
-              v-for="item in userOptions.filter(
-                (item) => item.label !== 'admin'
-              )"
+              v-for="item in userOptions"
               :key="item.value"
               :label="item.label"
               :value="item.value + ''"
@@ -112,9 +110,7 @@
             clearable
           >
             <el-option
-              v-for="item in userOptions.filter(
-                (item) => item.label !== 'admin'
-              )"
+              v-for="item in userOptions"
               :key="item.value"
               :label="item.label"
               :value="item.value + ''"
