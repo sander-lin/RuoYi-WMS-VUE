@@ -146,7 +146,9 @@ export const useWmsStore = defineStore("wms", () => {
           userList.value.forEach((supplier) => {
             map.set(supplier.id, { ...supplier });
           });
-          userOptions.value = userList.value.map((item) => {
+          userOptions.value = userList.value.filter((item) => {
+            return item.userId !== 1;
+          }).map((item) => {
             return {
               label: item.userName,
               value: item.userId,

@@ -49,65 +49,26 @@
         :reserve-selection="true"
         v-if="!singleSelect"
       />
-      <el-table-column label="商品信息" prop="itemId">
-        <template #default="{ row }">
-          <div>{{ row.item.itemName }}</div>
-          <div v-if="row.item.itemCode">编号：{{ row.item.itemCode }}</div>
-          <div v-if="row.item.itemBrand">
-            品牌：{{
-              useWmsStore().itemBrandMap.get(row.item.itemBrand).brandName
-            }}
-          </div>
+      <el-table-column label="商品编号" prop="id" v-if="true" />
+      <el-table-column label="FNSKU" prop="fnsku" />
+      <el-table-column label="ASIN" prop="asin" />
+      <el-table-column label="商品名称" prop="name" />
+      <el-table-column label="图片" align="center" prop="image" width="100">
+        <template #default="scope">
+          <image-preview :src="scope.row.image" :width="50" :height="50" />
         </template>
       </el-table-column>
-      <el-table-column label="规格信息">
-        <template #default="{ row }">
-          <div>{{ row.skuName }}</div>
-          <div v-if="row.skuCode">编号：{{ row.skuCode }}</div>
-          <div v-if="row.barcode">条码：{{ row.barcode }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="价格(元)" width="160" align="left">
-        <template #default="{ row }">
-          <div v-if="row.costPrice" class="flex-space-between">
-            <span>成本价：</span>
-            <div>
-              {{ row.costPrice || row.costPrice === 0 ? row.costPrice : "" }}
-            </div>
-          </div>
-          <div v-if="row.sellingPrice" class="flex-space-between">
-            <span>销售价：</span>
-            <div>
-              {{
-                row.sellingPrice || row.sellingPrice === 0
-                  ? row.sellingPrice
-                  : ""
-              }}
-            </div>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="重量(kg)" width="160" align="left">
-        <template #default="{ row }">
-          <div v-if="row.netWeight" class="flex-space-between">
-            <span>净重：</span>
-            <div>
-              {{ row.netWeight || row.netWeight === 0 ? row.netWeight : "" }}
-            </div>
-          </div>
-          <div v-if="row.grossWeight" class="flex-space-between">
-            <span>毛重：</span>
-            <div>
-              {{
-                row.grossWeight || row.grossWeight === 0 ? row.grossWeight : ""
-              }}
-            </div>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="长宽高(cm)" align="right" width="250">
-        <template #default="{ row }">
-          <div>{{ getVolumeText(row) }}</div>
+      <el-table-column label="尺寸" prop="size" />
+      <el-table-column label="颜色" prop="color" />
+      <el-table-column label="型号" prop="type" />
+      <el-table-column label="单价" prop="price" />
+      <el-table-column label="所属用户" prop="userId">
+        <template #default="scope">
+          {{
+            userOptions.find(
+              (item) => item.value === parseInt(scope.row.userId)
+            )?.label
+          }}
         </template>
       </el-table-column>
       <el-table-column
@@ -157,9 +118,10 @@ import { getRowspanMethod } from "@/utils/getRowSpanMethod";
 import { listItemSkuPage } from "@/api/wms/itemSku";
 import { useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
+import { listMerchandise } from "@/api/wms/merchandise";
 
 const { proxy } = getCurrentInstance();
-
+const { userOptions, getUserList } = useWmsStore();
 const spanMethod = computed(() => getRowspanMethod(list.value, ["itemId"]));
 const router = useRouter();
 const loading = ref(false);
@@ -177,7 +139,7 @@ const pageReq = reactive({
   page: 1,
   size: 10,
 });
-const list = ref([]);
+const list = ref<any[]>([]);
 const rightList = ref([]);
 const rightListKeySet = computed(() => {
   const set = new Set();
@@ -198,7 +160,7 @@ const loadAll = () => {
     pageSize: pageReqCopy.size,
   };
   loading.value = true;
-  listItemSkuPage(data)
+  listMerchandise(data)
     .then((res) => {
       const content = [...res.rows];
       list.value = content.map((item) => ({ ...item, checked: false }));
@@ -215,7 +177,7 @@ const getList = () => {
     pageNum: pageReq.page,
     pageSize: pageReq.size,
   };
-  listItemSkuPage(data).then((res) => {
+  listMerchandise(data).then((res) => {
     const content = [...res.rows];
     list.value = content.map((item) => ({ ...item, checked: false }));
     total.value = res.total;
