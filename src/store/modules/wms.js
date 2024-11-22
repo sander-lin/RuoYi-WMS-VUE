@@ -6,7 +6,7 @@ import {
   treeSelectItemCategory,
 } from "@/api/wms/itemCategory";
 import { listItemBrand } from "@/api/wms/itemBrand";
-import { listLogistics } from "@/api/wms/logistics";
+import { listChannel } from "@/api/wms/channel";
 import { listUser } from "@/api/system/user";
 import { defineStore } from "pinia";
 import { ref } from "vue";
@@ -117,9 +117,9 @@ export const useWmsStore = defineStore("wms", () => {
 
   const getLogisticsList = () => {
     return new Promise((resolve, reject) => {
-      listLogistics({})
+      listChannel({})
         .then((res) => {
-          logisticsList.value = res.data;
+          logisticsList.value = res.rows;
           const map = new Map();
           logisticsList.value.forEach((supplier) => {
             map.set(supplier.id, { ...supplier });
@@ -160,8 +160,8 @@ export const useWmsStore = defineStore("wms", () => {
         .catch(() => reject());
     });
   };
-  getUserList();
-
+  // getUserList();
+  // getLogisticsList();
   return {
     // 仓库管理
     warehouseList,

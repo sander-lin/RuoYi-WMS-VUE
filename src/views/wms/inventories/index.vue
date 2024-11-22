@@ -49,7 +49,7 @@
             plain
             icon="Plus"
             @click="handleAdd"
-            v-hasPermi="['wms:Inventories:add']"
+            v-hasPermi="['wms:inventories:add']"
             >批量入库</el-button
           >
           <el-button
@@ -57,7 +57,7 @@
             plain
             icon="Download"
             @click="handleExport"
-            v-hasPermi="['wms:Inventories:export']"
+            v-hasPermi="['wms:inventories:export']"
             >导出</el-button
           >
         </el-col>
@@ -121,7 +121,7 @@
               type="primary"
               icon="Edit"
               @click="handleUpdate(scope.row)"
-              v-hasPermi="['wms:Inventories:edit']"
+              v-hasPermi="['wms:inventories:edit']"
               >入库</el-button
             >
           </template>
@@ -271,9 +271,6 @@ function resetQuery() {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  // reset();
-  // open.value = true;
-  // title.value = "添加商品库存表";
   proxy.$router.push({ path: "/inventory/receiptOrderEdit" });
 }
 

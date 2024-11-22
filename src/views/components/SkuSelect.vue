@@ -12,7 +12,7 @@
         <el-col :span="8">
           <el-form-item label="商品名称">
             <el-input
-              v-model="query.itemName"
+              v-model="query.name"
               clearable
               placeholder="商品名称"
             ></el-input>
@@ -22,7 +22,7 @@
           <el-form-item label="商品编号">
             <el-input
               class="w200"
-              v-model="query.itemCode"
+              v-model="query.fnsku"
               clearable
               placeholder="商品编号"
             ></el-input>
@@ -48,6 +48,7 @@
         width="55"
         :reserve-selection="true"
         v-if="!singleSelect"
+        :selectable="isSelectable"
       />
       <el-table-column label="商品编号" prop="id" v-if="true" />
       <el-table-column label="FNSKU" prop="fnsku" />
@@ -112,7 +113,14 @@
   </el-drawer>
 </template>
 <script setup lang="ts" name="SkuSelect">
-import { computed, getCurrentInstance, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  getCurrentInstance,
+  onMounted,
+  reactive,
+  ref,
+  nextTick,
+} from "vue";
 import { ElForm } from "element-plus";
 import { getRowspanMethod } from "@/utils/getRowSpanMethod";
 import { listItemSkuPage } from "@/api/wms/itemSku";
@@ -127,10 +135,8 @@ const router = useRouter();
 const loading = ref(false);
 const deptOptions = ref([]);
 const query = reactive({
-  itemName: "",
-  itemCode: "",
-  skuName: "",
-  barcode: "",
+  name: "",
+  fnsku: "",
 });
 const selectItemSkuVoCheck = ref([]);
 const skuSelectFormRef = ref(null);
@@ -151,6 +157,10 @@ const editableList = computed(() => {
   return list.value.filter((it) => !rightListKeySet.value.has(it.id));
 });
 
+const isSelectable = (row) => {
+  return !row.checked; // 根据数据中是否包含 disabled 属性来决定是否可选
+};
+
 const loadAll = () => {
   pageReq.page = 1;
   const pageReqCopy = { ...pageReq };
@@ -163,7 +173,10 @@ const loadAll = () => {
   listMerchandise(data)
     .then((res) => {
       const content = [...res.rows];
-      list.value = content.map((item) => ({ ...item, checked: false }));
+      list.value = content.map((item) => ({
+        ...item,
+        checked: props.selectedItem?.includes(item.id),
+      }));
       total.value = res.total;
     })
     .finally(() => (loading.value = false));
@@ -179,7 +192,10 @@ const getList = () => {
   };
   listMerchandise(data).then((res) => {
     const content = [...res.rows];
-    list.value = content.map((item) => ({ ...item, checked: false }));
+    list.value = content.map((item) => ({
+      ...item,
+      checked: props.selectedItem.includes(item.id),
+    }));
     total.value = res.total;
   });
 };
@@ -200,6 +216,7 @@ const props = defineProps<{
   modelValue?: boolean;
   size: number | string;
   singleSelect: boolean;
+  selectedItem: any;
 }>();
 
 const show = computed(() => {
