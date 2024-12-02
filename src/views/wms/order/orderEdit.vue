@@ -29,7 +29,7 @@
               border
               empty-text="暂无商品明细"
             >
-              <el-table-column label="商品编号" prop="id" v-if="true" />
+              <el-table-column label="商品编号" prop="id" />
               <el-table-column label="FNSKU" prop="fnsku" />
               <el-table-column label="ASIN" prop="asin" />
               <el-table-column label="商品名称" prop="name" />
@@ -123,10 +123,16 @@
           </el-form-item>
         </el-form>
       </el-card>
+      <div class="total-price">
+        <span class="total-price-label">订单总价：￥</span>
+        <span class="total-price-number">
+          {{ totalPrice ? totalPrice : "--" }}
+        </span>
+      </div>
       <SkuSelect
         ref="sku-select"
         :model-value="skuSelectShow"
-        :selected-item="form.merchandises"
+        :selected-item="form.merchandises.map((it) => it.id)"
         @handleOkClick="handleOkClick"
         @handleCancelClick="skuSelectShow = false"
         :size="'80%'"
@@ -157,13 +163,12 @@ import {
   watch,
 } from "vue";
 import { addOrder, updateOrder, getOrder } from "@/api/wms/order";
+import { updateUserBalance } from "@/api/system/user";
 import { ElMessage, ElMessageBox } from "element-plus";
 import SkuSelect from "@/views/components/SkuSelect.vue";
 import { useRoute, useRouter } from "vue-router";
-import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
 import { numSub, generateNo } from "@/utils/ruoyi";
-import { delReceiptOrderDetail } from "@/api/wms/receiptOrderDetail";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -203,9 +208,6 @@ const data = reactive({
     receiptOrderNo: [
       { required: true, message: "入库单号不能为空", trigger: "blur" },
     ],
-    // receiptOrderType: [
-    //   { required: true, message: "入库类型不能为空", trigger: "change" },
-    // ],
   },
 });
 const { form, rules } = toRefs(data);
@@ -231,19 +233,22 @@ const showAddItem = () => {
 const handleOkClick = (item) => {
   skuSelectShow.value = false;
   item.forEach((it) => {
-    form.value.merchandises.push({
-      ...it,
-      merchandiseId: it.id,
-      quantityRequired: null,
-      labelOption: null,
-    });
+    if (!form.value.merchandises.some((item) => item.id === it.id)) {
+      form.value.merchandises.push(it);
+    }
   });
 };
-// 选择商品 end
 
 // 初始化receipt-order-form ref
 const orderForm = ref();
 
+const totalPrice = computed(() => {
+  return form.value.merchandises.reduce((acc, cur) => {
+    const price = parseFloat(cur.price) || 0;
+    const quantityRequired = parseInt(cur.quantityRequired) || 0;
+    return acc + price * quantityRequired;
+  }, 0);
+});
 const doSave = async (OrderStatus = 0) => {
   //验证receiptForm表单
   orderForm.value?.validate((valid) => {
@@ -269,11 +274,6 @@ const doSave = async (OrderStatus = 0) => {
         price: it.price,
       };
     });
-    const totalAmount = merchandises.reduce((acc, cur) => {
-      const price = parseFloat(cur.price) || 0;
-      const quantityRequired = parseInt(cur.quantityRequired) || 0;
-      return acc + price * quantityRequired;
-    }, 0);
 
     const params = {
       id: form.value.id,
@@ -281,7 +281,7 @@ const doSave = async (OrderStatus = 0) => {
       type: form.value.type,
       remark: form.value.remark,
       status: OrderStatus,
-      totalAmount: totalAmount,
+      totalAmount: totalPrice.value,
       merchandises: merchandises,
     };
     if (params.id) {
@@ -306,18 +306,26 @@ const doSave = async (OrderStatus = 0) => {
   });
 };
 
-const updateToInvalid = async () => {
-  await proxy?.$modal.confirm("确认作废入库单吗？");
-  doSave(0);
-};
-
 const saveAsDraft = async () => {
   await proxy?.$modal.confirm("确认保存为草稿吗？");
   doSave(1);
 };
 const AddOrder = async () => {
-  await proxy?.$modal.confirm("确认发布吗？");
-  doSave(2);
+  if (totalPrice.value > userStore.balance) {
+    await proxy?.$modal.confirm("余额不足, 是否先保存为草稿？");
+    doSave(1);
+  } else {
+    await proxy?.$modal.confirm("确认发布吗？");
+    doSave(2);
+    updateUserBalance({
+      userId: userStore.id,
+      balance: numSub(parseFloat(userStore.balance), totalPrice.value),
+    }).then((res) => {
+      if (res.code === 200) {
+        userStore.updateBalance();
+      }
+    });
+  }
 };
 
 const route = useRoute();
@@ -385,7 +393,19 @@ function updateOrderMerchandises(row, index) {
 
 <style lang="scss" scoped>
 @import "@/assets/styles/variables.module";
-
+.total-price {
+  margin-top: 20px;
+  text-align: right;
+  .total-price-label {
+    font-size: 16px;
+    color: #606266;
+  }
+  .total-price-number {
+    font-size: 28px;
+    color: #f56c6c;
+    font-weight: bold;
+  }
+}
 .btn-box {
   width: calc(100% - #{$base-sidebar-width});
   display: flex;

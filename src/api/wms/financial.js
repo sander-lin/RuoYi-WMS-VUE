@@ -42,3 +42,20 @@ export function delFinancial(id) {
     method: 'delete'
   })
 }
+
+// 获取账户余额
+export function getBalance(id) {
+  return request({
+    url: '/wms/balance/' + id,
+    method: 'get'
+  })
+}
+
+// 更新账户余额
+export function updateBalance(data) {
+  return request({
+    url: '/wms/balance',
+    method: 'put',
+    data: data
+  })
+}

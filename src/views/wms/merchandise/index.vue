@@ -239,10 +239,10 @@ const data = reactive({
     fnsku: [{ required: true, message: "FNSKU不能为空", trigger: "blur" }],
     asin: [{ required: true, message: "ASIN不能为空", trigger: "blur" }],
     name: [{ required: true, message: "商品名称不能为空", trigger: "blur" }],
-    // size: [{ required: true, message: "尺寸不能为空", trigger: "blur" }],
-    // color: [{ required: true, message: "颜色不能为空", trigger: "blur" }],
+    size: [{ required: true, message: "尺寸不能为空", trigger: "blur" }],
+    color: [{ required: true, message: "颜色不能为空", trigger: "blur" }],
     type: [{ required: true, message: "型号不能为空", trigger: "change" }],
-    // image: [{ required: true, message: "图片不能为空", trigger: "blur" }],
+    image: [{ required: true, message: "图片不能为空", trigger: "blur" }],
     userId: [
       { required: true, message: "所属用户不能为空", trigger: "change" },
     ],
@@ -287,10 +287,6 @@ function reset() {
   proxy.resetForm("merchandiseRef");
 }
 
-function handleUploadSuccess(response) {
-  console.log(response);
-  form.value.image.push(response.data.url);
-}
 /** 搜索按钮操作 */
 function handleQuery() {
   queryParams.value.pageNum = 1;
@@ -318,7 +314,7 @@ function handleUpdate(row) {
     form.value = response.data;
 
     open.value = true;
-    title.value = "修改商品管理";
+    title.value = "修改商品信息";
   });
 }
 

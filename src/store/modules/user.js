@@ -10,6 +10,7 @@ const useUserStore = defineStore(
       id: '',
       name: '',
       avatar: '',
+      balance: 0,
       roles: [],
       permissions: []
     }),
@@ -46,12 +47,25 @@ const useUserStore = defineStore(
             this.id = user.userId
             this.name = user.userName
             this.avatar = avatar
+            this.balance = user.balance
             resolve(res)
           }).catch(error => {
             reject(error)
           })
         })
       },
+      updateBalance() {
+        return new Promise((resolve, reject) => {
+          getInfo().then(res => {
+            const user = res.data.user
+            this.balance = user.balance
+            resolve(res)
+          }).catch(error => {
+            reject(error)
+          })
+        })
+      },
+
       // 退出系统
       logOut() {
         return new Promise((resolve, reject) => {

@@ -15,14 +15,24 @@
               <el-select
                 v-model="form.status"
                 @change="handleChangeStatus(scope.row)"
+                v-if="editAble"
               >
                 <el-option
-                  v-for="item in shipping_status"
+                  v-for="item in shipping_status.filter((i) => i.value !== '4')"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
                 ></el-option>
               </el-select>
+              <div
+                v-else
+                style="font-weight: bold; font-size: large"
+                :style="{ color: form.status === '4' ? 'green' : 'grey' }"
+              >
+                {{
+                  shipping_status.find((i) => i.value === form.status)?.label
+                }}
+              </div>
             </el-form-item>
           </div>
           <el-form-item label="配送信息：" prop="order">
@@ -89,11 +99,6 @@
               width="120"
             />
             <el-table-column
-              label="已发货数量"
-              prop="totalQuantityShipped"
-              width="120"
-            />
-            <el-table-column
               label="本次实发数量"
               prop="quantityShipped"
               width="120"
@@ -106,7 +111,12 @@
       <div class="btn-box">
         <div></div>
         <div>
-          <!-- <el-button @click="AddShipment" type="primary">保存</el-button> -->
+          <el-button @click="save('4')" type="primary" v-if="receiptAble"
+            >确认收货</el-button
+          >
+          <el-button @click="save()" type="primary" v-if="editAble"
+            >保存</el-button
+          >
           <el-button @click="cancel" class="mr10">返回</el-button>
         </div>
       </div>
@@ -125,13 +135,11 @@ import {
   toRefs,
   watch,
 } from "vue";
-import { addShipment, updateShipment, getShipment } from "@/api/wms/shipment";
+import { getShipment, updateShipment } from "@/api/wms/shipment";
 import { ElMessage, ElMessageBox } from "element-plus";
-import SkuSelect from "@/views/components/SkuSelect.vue";
 import { useRoute, useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
-import { numSub, generateNo } from "@/utils/ruoyi";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -141,11 +149,15 @@ const { label_type, order_option, shipping_status } = proxy.useDict(
   "order_option",
   "shipping_status"
 );
-const currentPath = computed(() => {
-  return router.currentRoute.value.path;
-});
+
 const userStore = useUserStore();
-const mode = ref(false);
+const isBuyer = userStore.roles.includes("buyer");
+const editAble = computed(() => {
+  return !isBuyer && form.value.status !== "4";
+});
+const receiptAble = computed(() => {
+  return isBuyer && form.value.status === "3";
+});
 const loading = ref(false);
 const initFormData = {
   id: undefined,
@@ -158,48 +170,37 @@ const initFormData = {
 };
 const data = reactive({
   form: { ...initFormData },
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    receiptShipmentNo: undefined,
-    receiptShipmentType: undefined,
-    orderNo: undefined,
-    payableAmount: undefined,
-    receiptShipmentStatus: undefined,
-  },
-  rules: {
-    id: [{ required: true, message: "不能为空", trigger: "blur" }],
-  },
 });
-const { form, rules } = toRefs(data);
+const { form } = toRefs(data);
 
-const cancel = async () => {
-  await proxy?.$modal.confirm("确认取消编辑发货通知单吗？");
+const save = (status) => {
+  ElMessageBox.confirm(status === "4" ? "确认收货吗？" : "确定保存吗？")
+    .then(() => {
+      loading.value = true;
+      const data = {
+        id: form.value.id,
+        status: status === "4" ? status : form.value.status,
+      };
+      updateShipment(data).then((response) => {
+        if (response.code === 200) {
+          ElMessage({
+            type: "success",
+            message: status === "4" ? "确认收货成功" : "修改成功",
+          });
+        }
+      });
+      loading.value = false;
+      close();
+    })
+    .catch(() => {
+      loading.value = false;
+    });
+};
+const cancel = () => {
   close();
 };
 const close = () => {
   proxy?.$router.go(-1);
-};
-const skuSelectShow = ref(false);
-
-// 选择商品 start
-const showAddItem = () => {
-  proxy.$router.push({
-    path: "/shipment/create",
-    query: { orderId: form.value.id },
-  });
-};
-// 选择成功
-const handleOkClick = (item) => {
-  skuSelectShow.value = false;
-  item.forEach((it) => {
-    form.value.merchandises.push({
-      ...it,
-      merchandiseId: it.id,
-      quantityRequired: null,
-      labelOption: null,
-    });
-  });
 };
 
 /** 查看详情按钮操作 */
@@ -208,11 +209,6 @@ function handleViewDetail(row) {
 }
 
 const orderForm = ref();
-
-// const AddShipment = async () => {
-//   await proxy?.$modal.confirm("确认发布吗？");
-//   doSave(2);
-// };
 
 const route = useRoute();
 onMounted(() => {
@@ -236,36 +232,6 @@ const loadDetail = (id) => {
       loading.value = false;
     });
 };
-
-const handleChangeQuantity = () => {
-  let sum = 0;
-  form.value.merchandises.forEach((it) => {
-    if (it.quantityRequired) {
-      sum += Number(it.quantityRequired);
-    }
-  });
-  form.value.totalQuantity = sum;
-};
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _ids = row.id || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除发货单表编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      loading.value = true;
-      return delShipment(_ids);
-    })
-    .then(() => {
-      loading.value = true;
-      getList();
-      proxy.$modal.msgSuccess("删除成功");
-    })
-    .catch(() => {})
-    .finally(() => {
-      loading.value = false;
-    });
-}
 </script>
 
 <style lang="scss" scoped>

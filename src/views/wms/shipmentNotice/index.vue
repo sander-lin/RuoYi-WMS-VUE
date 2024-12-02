@@ -31,6 +31,7 @@
       />
     </el-tabs>
     <el-table :data="noticeList" border empty-text="暂无发货通知单">
+      <el-table-column label="订单号" prop="orderId" align="center" />
       <el-table-column label="发货通知单号" prop="id" align="center" />
       <el-table-column
         prop="merchandises"
@@ -45,8 +46,8 @@
             class="goods-info"
           >
             <el-image
-              :src="`http://localhost:1338${item.image}`"
-              :preview-src-list="[`http://localhost:1338${item.image}`]"
+              :src="item.image"
+              :preview-src-list="[item.image]"
               fit="cover"
               class="goods-image"
             />
@@ -111,7 +112,8 @@
             link
             type="primary"
             @click="handleAdd(scope.row)"
-            v-hasPermi="['wms:shipmentNotice:add']"
+            v-hasPermi="['wms:shipment:add']"
+            v-if="['1', '2'].includes(scope.row.status)"
             >创建发货单</el-button
           >
           <el-button
@@ -119,7 +121,16 @@
             type="primary"
             @click="handleDelete(scope.row)"
             v-hasPermi="['wms:shipmentNotice:remove']"
+            v-if="scope.row.status === '1'"
             >删除</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            @click="handleChangeStatus(scope.row)"
+            v-hasPermi="['wms:shipmentNotice:edit']"
+            v-if="!['1', '5'].includes(scope.row.status)"
+            >关闭</el-button
           >
         </template>
       </el-table-column>
@@ -164,7 +175,7 @@ const open = ref(false);
 const loading = ref(true);
 const ids = ref([]);
 const total = ref(0);
-
+const isDraft = ref(false);
 const data = reactive({
   queryParams: {
     pageNum: 1,
@@ -190,37 +201,33 @@ function getList() {
   });
 }
 
-const handleChangeStatus = (row) => {
-  ElMessageBox.confirm("确定要修改订单状态吗？", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(() => {
-      const data = {
-        id: row.id,
-        status: row.status,
-        userId: row.user.value,
-        type: row.type,
-        remark: row.remark,
-        totalAmount: row.totalAmount,
+let previousOrderId = null;
+function objectSpanMethod({ row, column, rowIndex, columnIndex }) {
+  if (columnIndex === 0) {
+    // 检查当前行的 orderId 是否与上一行相同
+    if (previousOrderId === row.orderId) {
+      return {
+        rowspan: 0,
+        colspan: 0, // 当前行不显示
       };
-      updateOrderStatus(data).then((response) => {
-        ElMessage({
-          type: "success",
-          message: "修改成功",
-        });
-        open.value = false;
-      });
-    })
-    .catch(() => {
-      ElMessage({
-        type: "info",
-        message: "已取消修改",
-      });
-      getList();
-    });
-};
+    } else {
+      // 找到相同的 orderId 所有连续行的数量
+      let rowspan = 1;
+      for (let i = rowIndex + 1; i < noticeList.value.length; i++) {
+        if (noticeList.value[i].orderId === row.orderId) {
+          rowspan++;
+        } else {
+          break; // 如果没有相同的 orderId 就停止
+        }
+      }
+      previousOrderId = row.orderId; // 更新后一个 orderId
+      return {
+        rowspan: rowspan, // 返回合并的行数
+        colspan: 1,
+      };
+    }
+  }
+}
 
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -246,7 +253,43 @@ function handleAdd(row) {
   });
 }
 
-/** 修改按钮操作 */
+const handleChangeStatus = (row) => {
+  ElMessageBox.confirm(
+    isDraft.value ? "确定要发布订单吗？" : "确定要关闭该发货通知单吗？",
+    "提示",
+    {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+    }
+  )
+    .then(() => {
+      const data = {
+        id: row.id,
+        status: "5",
+        userId: row.userId,
+        orderId: row.orderId,
+        tag: row.tag,
+        remark: row.remark,
+        deliveryMethod: row.deliveryMethod,
+      };
+      updateShipmentNotice(data).then((response) => {
+        ElMessage({
+          type: "success",
+          message: isDraft.value ? "发布成功" : "关闭成功",
+        });
+      });
+      getList();
+    })
+    .catch(() => {
+      ElMessage({
+        type: "info",
+        message: isDraft.value ? "已取消发布" : "已取消关闭",
+      });
+    });
+};
+
+/** 查看按钮操作 */
 function handleViewDetail(row) {
   proxy.$router.push({ path: "/shipmentNotice/detail", query: { id: row.id } });
 }

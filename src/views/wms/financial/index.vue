@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-card>
+    <el-card v-if="!isBuyer">
       <el-form
         :model="queryParams"
         ref="queryRef"
@@ -29,11 +29,33 @@
         </el-form-item>
       </el-form>
     </el-card>
-
+    <el-card v-if="isBuyer">
+      <div>我的账单</div>
+      <el-row class="balance-summary" gutter="20">
+        <el-col :span="8" class="balance-section">
+          <div class="balance-title">
+            <strong>收入</strong>
+          </div>
+          <div class="income">¥ 4000</div>
+        </el-col>
+        <el-col :span="8" class="balance-section">
+          <div class="balance-title">
+            <strong>支出</strong>
+          </div>
+          <div class="expense">¥ 1000</div>
+        </el-col>
+        <el-col :span="8" class="balance-section">
+          <div class="balance-title">
+            <strong>账户余额</strong>
+          </div>
+          <div class="balance">¥ 3000</div>
+        </el-col>
+      </el-row>
+    </el-card>
     <el-card class="mt20">
       <el-row :gutter="10" class="mb8" type="flex" justify="space-between">
         <el-col :span="6"
-          ><span style="font-size: large">资金明细表</span></el-col
+          ><span style="font-size: large">账单流水</span></el-col
         >
         <el-col :span="1.5">
           <el-button
@@ -42,6 +64,7 @@
             icon="Plus"
             @click="handleAdd"
             v-hasPermi="['wms:financial:add']"
+            v-if="!isBuyer"
             >充值</el-button
           >
           <el-button
@@ -57,7 +80,7 @@
 
       <el-table v-loading="loading" :data="financialList" border class="mt20">
         <el-table-column label="流水号" prop="id" v-if="true" />
-        <el-table-column label="充值客户" prop="userId">
+        <el-table-column label="充值客户" prop="userId" v-if="!isBuyer">
           <template #default="scope">
             {{
               userOptions.find(
@@ -66,7 +89,10 @@
             }}
           </template>
         </el-table-column>
+        <el-table-column label="类型" prop="type" />
+        <el-table-column label="子类型" prop="subType" v-if="isBuyer" />
         <el-table-column label="金额" prop="amount" />
+        <el-table-column label="日期" prop="createTime" />
         <el-table-column
           label="操作"
           align="center"
@@ -108,6 +134,7 @@
             v-model="form.userId"
             placeholder="请选择所属客户"
             clearable
+            @change="handleUserChange"
           >
             <el-option
               v-for="item in userOptions"
@@ -118,12 +145,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="客户余额">
-          {{
-            form.userId
-              ? userList.find((item) => item.value === parseInt(form.userId))
-                  ?.remark
-              : "--"
-          }}
+          {{ form.balance || "--" }}
         </el-form-item>
         <el-form-item label="充值金额" prop="amount">
           <el-input-number v-model="form.amount" placeholder="请输入充值金额" />
@@ -149,9 +171,14 @@ import {
   addFinancial,
   updateFinancial,
 } from "@/api/wms/financial";
+import { getUserProfile, getUser } from "@/api/system/user";
+import { getBalance } from "@/api/wms/financial";
 import { useWmsStore } from "@/store/modules/wms";
+import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
+const userStore = useUserStore();
+const isBuyer = userStore.roles.includes("buyer");
 const { userOptions, getUserList, userList } = useWmsStore();
 const financialList = ref([]);
 const open = ref(false);
@@ -197,6 +224,12 @@ function getList() {
   });
 }
 
+async function handleUserChange(value) {
+  form.value.userId = value;
+  await getBalance(value).then((response) => {
+    form.value.balance = response.data.balance;
+  });
+}
 // 取消按钮
 function cancel() {
   open.value = false;
@@ -313,3 +346,30 @@ function handleExport() {
 getList();
 // getUserList();
 </script>
+
+<style lang="scss" scoped>
+.balance-summary {
+  padding: 40px 0;
+  .balance-section {
+    text-align: center;
+    .balance-title {
+      margin-bottom: 20px;
+    }
+    .income {
+      color: red;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .expense {
+      color: green;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .balance {
+      color: black;
+      font-size: 24px;
+      font-weight: bold;
+    }
+  }
+}
+</style>

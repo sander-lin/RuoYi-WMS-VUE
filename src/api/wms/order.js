@@ -70,18 +70,18 @@ export function delOrder(id) {
 }
 
 // 查询订单关联商品
-export function listMerchandiseByOrderId(id) {
-  return request({
-    url: '/wms/order/listMerchandiseByOrderId/' + id,
-    method: 'get'
-  })
-}
+// export function listMerchandiseByOrderId(id) {
+//   return request({
+//     url: '/wms/order/listMerchandiseByOrderId/' + id,
+//     method: 'get'
+//   })
+// }
 
-// 查询发货通知单关联商品
-export function listMerchandiseByNoticeId(id) {
-  return request({
-    url: '/wms/order/listMerchandiseByNoticeId/' + id,
-    method: 'get'
-  })
-}
+// // 查询发货通知单关联商品
+// export function listMerchandiseByNoticeId(id) {
+//   return request({
+//     url: '/wms/order/listMerchandiseByNoticeId/' + id,
+//     method: 'get'
+//   })
+// }
 

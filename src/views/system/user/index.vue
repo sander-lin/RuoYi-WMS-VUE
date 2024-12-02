@@ -114,10 +114,15 @@
         <el-table-column
           label="余额"
           align="center"
+          key="balance"
           props="balance"
           v-if="columns[3].visible"
           :show-overflow-tooltip="true"
-        />
+        >
+          <template #default="scope">
+            <span>{{ scope.row.balance || "--" }}</span>
+          </template>
+        </el-table-column>
         <el-table-column
           label="状态"
           align="center"
@@ -507,7 +512,6 @@ function getList() {
       userList.value = res.rows.map((item) => {
         return {
           ...item,
-          balance: item.remark || "0",
         };
       });
       total.value = res.total;

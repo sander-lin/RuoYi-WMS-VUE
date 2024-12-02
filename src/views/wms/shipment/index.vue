@@ -58,7 +58,7 @@
       </el-row>
 
       <el-table v-loading="loading" :data="shipmentList" border class="mt20">
-        <el-table-column label="" prop="id" v-if="true" />
+        <el-table-column label="" prop="id" />
         <el-table-column label="发货通知单编号" prop="shipmentNoticeId" />
         <el-table-column label="发货状态" prop="status" />
         <el-table-column label="物流渠道" prop="deliveryMethod" />

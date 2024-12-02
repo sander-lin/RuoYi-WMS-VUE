@@ -15,6 +15,7 @@
           <div class="receipt-order-content">
             <el-table
               :data="form.merchandises"
+              ref="multipleTable"
               border
               empty-text="暂无商品"
               :row-key="getRowKey"
@@ -25,7 +26,7 @@
                 width="55"
                 :reserve-selection="true"
               />
-              <el-table-column label="商品编号" prop="id" v-if="true" />
+              <el-table-column label="商品编号" prop="id" />
               <el-table-column label="FNSKU" prop="fnsku" />
               <el-table-column label="ASIN" prop="asin" />
               <el-table-column label="商品名称" prop="name" />
@@ -76,8 +77,8 @@
                 align="center"
               />
               <el-table-column
-                label="总通知发货数量"
-                prop="totalQuantityNotice"
+                label="总已发数量"
+                prop="totalQuantityShipped"
                 width="120"
                 align="center"
               />
@@ -92,8 +93,10 @@
                     v-model="row.quantityShipped"
                     placeholder="数量"
                     :min="1"
-                    :max="row.quantityNotice"
+                    :max="row.quantityNotice - row.totalQuantityShipped"
                     :precision="0"
+                    @change="handleChangeQuantity(row)"
+                    @blur="handleChangeQuantity(row)"
                   ></el-input-number>
                 </template>
               </el-table-column>
@@ -236,7 +239,7 @@ const getRowKey = (row) => {
 };
 // 初始化receipt-order-form ref
 const orderForm = ref();
-
+const multipleTable = ref();
 const doSave = async (NoticeStatus = 1) => {
   //验证receiptForm表单
   orderForm.value?.validate((valid) => {
@@ -310,13 +313,10 @@ const updateShipmentNoticeStatus = (id, status) => {
     }, 0);
   });
 };
-const saveAsDraft = async () => {
-  await proxy?.$modal.confirm("确认保存为草稿吗？");
-  doSave(1);
-};
+
 const AddShipment = async () => {
   await proxy?.$modal.confirm("确认发布吗？");
-  doSave(2);
+  doSave(1);
 };
 
 const route = useRoute();
@@ -335,8 +335,10 @@ const loadDetail = (id) => {
   getShipmentNotice(id)
     .then((response) => {
       form.value = response.data;
+      form.value.remark = "";
       form.value.merchandises.forEach((it) => {
         it.labelOption = it.labelOption.split(",");
+        it.totalQuantityShipped = it.totalQuantityShipped || 0;
       });
       Promise.resolve();
     })
@@ -346,14 +348,12 @@ const loadDetail = (id) => {
     });
 };
 
-const handleChangeQuantity = () => {
-  let sum = 0;
-  form.value.merchandises.forEach((it) => {
-    if (it.quantityShipped) {
-      sum += Number(it.quantityShipped);
-    }
-  });
-  form.value.totalQuantity = sum;
+const handleChangeQuantity = (row) => {
+  if (row.quantityShipped > 0) {
+    multipleTable.value.toggleRowSelection(row, true);
+  } else {
+    multipleTable.value.clearSelection();
+  }
 };
 
 /** 多选框选中数据 */

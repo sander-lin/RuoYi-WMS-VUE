@@ -42,3 +42,19 @@ export function delMerchandise(id) {
     method: 'delete'
   })
 }
+
+// 查询订单关联商品
+export function listMerchandiseByOrderId(id) {
+  return request({
+    url: '/wms/merchandise/order/' + id,
+    method: 'get'
+  })
+}
+
+// 查询发货通知单关联商品
+export function listMerchandiseByNoticeId(id) {
+  return request({
+    url: '/wms/merchandise/shipmentNotice/' + id,
+    method: 'get'
+  })
+}

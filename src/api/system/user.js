@@ -133,3 +133,12 @@ export function deptTreeSelect() {
     method: 'get'
   })
 }
+
+// 更新用户余额
+export function updateUserBalance(data) {
+  return request({
+    url: '/system/user/changeBalance',
+    method: 'put',
+    data: data
+  })
+}

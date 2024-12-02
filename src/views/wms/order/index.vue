@@ -47,7 +47,6 @@
           icon="Plus"
           @click="handleAdd"
           v-hasPermi="['wms:order:add']"
-          v-if="!isDraft"
           >创建订单</el-button
         >
         <!-- <el-button
@@ -89,8 +88,8 @@
             class="goods-info"
           >
             <el-image
-              :src="`http://localhost:1338${item.image}`"
-              :preview-src-list="[`http://localhost:1338${item.image}`]"
+              :src="item.image"
+              :preview-src-list="[item.image]"
               fit="cover"
               class="goods-image"
             />

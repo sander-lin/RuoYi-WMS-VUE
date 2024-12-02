@@ -101,6 +101,12 @@
                 width="150"
                 align="center"
               />
+              <el-table-column
+                label="已通知发货数量"
+                prop="totalQuantityNotice"
+                width="150"
+                align="center"
+              />
             </el-table>
           </div>
         </el-form>
@@ -115,6 +121,8 @@
               size="default"
               @click="showAddItem"
               icon="Plus"
+              v-hasPermi="['wms:shipmentNotice:add']"
+              :disabled="disableCreate"
               >创建发货通知单</el-button
             >
           </div>
@@ -125,7 +133,7 @@
             border
             empty-text="暂无发货通知单"
           >
-            <el-table-column label="发货通知单号" prop="id" v-if="true" />
+            <el-table-column label="发货通知单号" prop="id" />
             <el-table-column
               prop="merchandises"
               label="商品信息"
@@ -139,8 +147,8 @@
                   class="goods-info"
                 >
                   <el-image
-                    :src="`http://localhost:1338${item.image}`"
-                    :preview-src-list="[`http://localhost:1338${item.image}`]"
+                    :src="item.image"
+                    :preview-src-list="[item.image]"
                     fit="cover"
                     class="goods-image"
                   />
@@ -164,7 +172,7 @@
             >
               <template #default="{ row }">
                 {{
-                  logisticsList.find((i) => i.id === row.deliveryMethod).name
+                  logisticsList.find((i) => i.id === row.deliveryMethod)?.name
                 }}
               </template>
             </el-table-column>
@@ -187,6 +195,36 @@
               align="center"
               width="200"
             />
+            <el-table-column
+              label="操作"
+              align="center"
+              class-name="small-padding fixed-width"
+            >
+              <template #default="scope">
+                <el-button
+                  link
+                  type="primary"
+                  @click="handleViewDetail(scope.row)"
+                  v-hasPermi="['wms:shipmentNotice:query']"
+                  >查看详情</el-button
+                >
+                <el-button
+                  link
+                  type="primary"
+                  @click="handleAdd(scope.row)"
+                  v-hasPermi="['wms:shipment:add']"
+                  v-if="['1', '2'].includes(scope.row.status)"
+                  >创建发货单</el-button
+                >
+                <el-button
+                  link
+                  type="primary"
+                  @click="handleDelete(scope.row)"
+                  v-hasPermi="['wms:shipmentNotice:remove']"
+                  >删除</el-button
+                >
+              </template>
+            </el-table-column>
           </el-table>
         </div>
       </el-card>
@@ -213,6 +251,7 @@ import {
   toRefs,
 } from "vue";
 import { updateOrder, getOrder } from "@/api/wms/order";
+import { delShipmentNotice } from "@/api/wms/shipmentNotice";
 import { ElMessage } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
@@ -299,13 +338,11 @@ const loadDetail = (id) => {
       form.value = { ...response.data };
       form.value.merchandises.forEach((it) => {
         it.labelOption = it.labelOption.split(",");
+        it.totalQuantityNotice = it.totalQuantityNotice || 0;
       });
       form.value.user = userOptions.find(
         (i) => i.value.toString() === form.value.userId
       )?.label;
-      //   form.value.shipmentNotices.forEach((it) => {
-      //     it.deliveryMethodItem = it.deliveryMethodItem.key;
-      //   });
       Promise.resolve();
     })
     .then(() => {})
@@ -314,38 +351,40 @@ const loadDetail = (id) => {
     });
 };
 
-const handleChangeQuantity = () => {
-  let sum = 0;
-  form.value.merchandises.forEach((it) => {
-    if (it.quantityRequired) {
-      sum += Number(it.quantityRequired);
-    }
-  });
-  form.value.totalQuantity = sum;
-};
-
-const handleDeleteDetail = (row, index) => {
-  form.value.merchandises.splice(index, 1);
-};
+const disableCreate = computed(() => {
+  return form.value.merchandises.every(
+    (it) => it.totalQuantityNotice === it.quantityRequired
+  );
+});
+/** 查看按钮操作 */
+function handleViewDetail(row) {
+  proxy.$router.push({ path: "/shipmentNotice/detail", query: { id: row.id } });
+}
 
 /** 删除按钮操作 */
-function updateOrderMerchandises(row, index) {
+function handleDelete(row) {
   const _ids = row.id || ids.value;
   proxy.$modal
-    .confirm('是否确认删除订单表编号为"' + _ids + '"的数据项？')
+    .confirm('是否确认删除发货通知单编号为"' + _ids + '"的数据项？')
     .then(function () {
       loading.value = true;
-      return delOrder(_ids);
+      return delShipmentNotice(_ids);
     })
     .then(() => {
       loading.value = true;
-      getList();
+      loadDetail(route.query.id);
       proxy.$modal.msgSuccess("删除成功");
     })
     .catch(() => {})
     .finally(() => {
       loading.value = false;
     });
+}
+function handleAdd(row) {
+  proxy.$router.push({
+    path: "/shipment/create",
+    query: { shipmentId: row.id },
+  });
 }
 </script>
 

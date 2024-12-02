@@ -35,7 +35,6 @@
     </el-form>
     <el-table
       :data="list"
-      @selection-change="handleSelectionChange"
       border
       :row-key="getRowKey"
       empty-text="暂无商品"
@@ -46,10 +45,17 @@
       <el-table-column
         type="selection"
         width="55"
-        :reserve-selection="true"
         v-if="!singleSelect"
-        :selectable="isSelectable"
-      />
+        :reserve-selection="true"
+      >
+        <template #default="{ row }">
+          <el-checkbox
+            v-model="row.isSelected"
+            :disabled="selectedItem.includes(row.id)"
+            @change="handleSelectionChange(row)"
+          />
+        </template>
+      </el-table-column>
       <el-table-column label="商品编号" prop="id" v-if="true" />
       <el-table-column label="FNSKU" prop="fnsku" />
       <el-table-column label="ASIN" prop="asin" />
@@ -126,10 +132,13 @@ import { getRowspanMethod } from "@/utils/getRowSpanMethod";
 import { listItemSkuPage } from "@/api/wms/itemSku";
 import { useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
+import useUserStore from "@/store/modules/user";
 import { listMerchandise } from "@/api/wms/merchandise";
 
-const { proxy } = getCurrentInstance();
+const instance = getCurrentInstance();
+const proxy = instance ? instance.proxy : null;
 const { userOptions, getUserList } = useWmsStore();
+const userStore = useUserStore();
 const spanMethod = computed(() => getRowspanMethod(list.value, ["itemId"]));
 const router = useRouter();
 const loading = ref(false);
@@ -139,7 +148,7 @@ const query = reactive({
   fnsku: "",
 });
 const selectItemSkuVoCheck = ref([]);
-const skuSelectFormRef = ref(null);
+const skuSelectFormRef = ref<ElForm | null>(null);
 const total = ref(0);
 const pageReq = reactive({
   page: 1,
@@ -157,10 +166,6 @@ const editableList = computed(() => {
   return list.value.filter((it) => !rightListKeySet.value.has(it.id));
 });
 
-const isSelectable = (row) => {
-  return !row.checked; // 根据数据中是否包含 disabled 属性来决定是否可选
-};
-
 const loadAll = () => {
   pageReq.page = 1;
   const pageReqCopy = { ...pageReq };
@@ -168,6 +173,7 @@ const loadAll = () => {
     ...query,
     pageNum: pageReqCopy.page,
     pageSize: pageReqCopy.size,
+    userId: userStore.id,
   };
   loading.value = true;
   listMerchandise(data)
@@ -175,7 +181,7 @@ const loadAll = () => {
       const content = [...res.rows];
       list.value = content.map((item) => ({
         ...item,
-        checked: props.selectedItem?.includes(item.id),
+        isSelected: false,
       }));
       total.value = res.total;
     })
@@ -194,7 +200,7 @@ const getList = () => {
     const content = [...res.rows];
     list.value = content.map((item) => ({
       ...item,
-      checked: props.selectedItem.includes(item.id),
+      isSelected: false,
     }));
     total.value = res.total;
   });
@@ -219,6 +225,7 @@ const props = defineProps<{
   selectedItem: any;
 }>();
 
+console.log("selectedItem", props.selectedItem);
 const show = computed(() => {
   return props.modelValue;
 });
@@ -244,28 +251,23 @@ function handleOkClick() {
   clearQuantity();
 }
 /** 多选框选中数据 */
-const handleSelectionChange = (selection) => {
-  selectItemSkuVoCheck.value = selection;
+const handleSelectionChange = (row) => {
+  if (row.isSelected) {
+    selectItemSkuVoCheck.value.push(row);
+  } else {
+    const index = selectItemSkuVoCheck.value.indexOf(row);
+    if (index !== -1) {
+      selectItemSkuVoCheck.value.splice(index, 1);
+    }
+  }
 };
 
 function clearQuantity() {
   skuSelectFormRef.value.clearSelection();
+  // list.value.forEach((item) => {
+  //   item.isSelected = false;
+  // });
 }
-
-const getVolumeText = (row) => {
-  if (
-    (row.length || row.length === 0) &&
-    (row.width || row.width === 0) &&
-    (row.height || row.height === 0)
-  ) {
-    return row.length + " * " + row.width + " * " + row.height;
-  }
-  return (
-    (row.length || row.length === 0 ? "长：" + row.length : "") +
-    (row.width || row.width === 0 ? " 宽：" + row.width : "") +
-    (row.height || row.height === 0 ? " 高：" + row.height : "")
-  );
-};
 
 onMounted(() => {
   loadAll();
