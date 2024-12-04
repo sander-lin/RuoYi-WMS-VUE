@@ -1,7 +1,7 @@
 import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import defAva from '@/assets/logo/logo.png'
-
+import { getBalance } from '@/api/wms/financial'
 const useUserStore = defineStore(
   'user',
   {
@@ -34,7 +34,7 @@ const useUserStore = defineStore(
       // 获取用户信息
       getInfo() {
         return new Promise((resolve, reject) => {
-          getInfo().then(res => {
+          getInfo().then(async res => {
             const user = res.data.user
             const avatar = (user.avatar == "" || user.avatar == null) ? defAva : user.avatar;
 
@@ -47,18 +47,12 @@ const useUserStore = defineStore(
             this.id = user.userId
             this.name = user.userName
             this.avatar = avatar
-            this.balance = user.balance
-            resolve(res)
-          }).catch(error => {
-            reject(error)
-          })
-        })
-      },
-      updateBalance() {
-        return new Promise((resolve, reject) => {
-          getInfo().then(res => {
-            const user = res.data.user
-            this.balance = user.balance
+            // 获取余额
+            if (res.data.roles.includes('buyer')) {
+              await getBalance(user.userId).then(res => {
+                this.balance = res.data?.balance
+              })
+            }
             resolve(res)
           }).catch(error => {
             reject(error)

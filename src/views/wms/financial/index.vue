@@ -1,13 +1,13 @@
 <template>
   <div class="app-container">
-    <el-card v-if="!isBuyer">
+    <el-card>
       <el-form
         :model="queryParams"
         ref="queryRef"
         :inline="true"
         label-width="68px"
       >
-        <el-form-item label="充值客户" prop="userId">
+        <el-form-item label="充值客户" prop="userId" v-if="!isBuyer">
           <el-select
             v-model="queryParams.userId"
             placeholder="请选择充值客户"
@@ -21,6 +21,34 @@
             ></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item label="账单类型" prop="state" v-if="isBuyer">
+          <el-select
+            v-model="queryParams.state"
+            placeholder="请选择账单类型"
+            clearable
+          >
+            <el-option
+              v-for="item in bill_type"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value + ''"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="日期范围" prop="timeRange">
+          <el-date-picker
+            v-model="timeRange"
+            type="daterange"
+            align="right"
+            unlink-panels
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            :shortcuts="shortcuts"
+            value-format="YYYY-MM-DD HH:mm:ss"
+          >
+          </el-date-picker>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery"
             >搜索</el-button
@@ -29,7 +57,7 @@
         </el-form-item>
       </el-form>
     </el-card>
-    <el-card v-if="isBuyer">
+    <el-card v-if="isBuyer" class="mt20">
       <div>我的账单</div>
       <el-row class="balance-summary" gutter="20">
         <el-col :span="8" class="balance-section">
@@ -79,8 +107,13 @@
       </el-row>
 
       <el-table v-loading="loading" :data="financialList" border class="mt20">
-        <el-table-column label="流水号" prop="id" v-if="true" />
-        <el-table-column label="充值客户" prop="userId" v-if="!isBuyer">
+        <el-table-column label="流水号" prop="id" v-if="true" align="center" />
+        <el-table-column
+          label="充值客户"
+          prop="userId"
+          v-if="!isBuyer"
+          align="center"
+        >
           <template #default="scope">
             {{
               userOptions.find(
@@ -89,14 +122,29 @@
             }}
           </template>
         </el-table-column>
-        <el-table-column label="类型" prop="type" />
-        <el-table-column label="子类型" prop="subType" v-if="isBuyer" />
-        <el-table-column label="金额" prop="amount" />
-        <el-table-column label="日期" prop="createTime" />
+        <el-table-column
+          label="类型"
+          prop="state"
+          align="center"
+          v-if="isBuyer"
+        >
+          <template #default="scope">
+            <dict-tag :options="bill_type" :value="scope.row.state" />
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="子类型"
+          prop="event"
+          v-if="isBuyer"
+          align="center"
+        />
+        <el-table-column label="金额" prop="amount" align="center" />
+        <el-table-column label="日期" prop="createTime" align="center" />
         <el-table-column
           label="操作"
           align="center"
           class-name="small-padding fixed-width"
+          v-if="!isBuyer"
         >
           <template #default="scope">
             <el-button
@@ -145,7 +193,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="客户余额">
-          {{ form.balance || "--" }}
+          {{ form.lastBalance || "--" }}
         </el-form-item>
         <el-form-item label="充值金额" prop="amount">
           <el-input-number v-model="form.amount" placeholder="请输入充值金额" />
@@ -164,22 +212,16 @@
 </template>
 
 <script setup name="Financial">
-import {
-  listFinancial,
-  getFinancial,
-  delFinancial,
-  addFinancial,
-  updateFinancial,
-} from "@/api/wms/financial";
-import { getUserProfile, getUser } from "@/api/system/user";
-import { getBalance } from "@/api/wms/financial";
+import { listFinancial, getFinancial, delFinancial } from "@/api/wms/financial";
+import { getBalance, updateBalance, recharge } from "@/api/wms/financial";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
 const isBuyer = userStore.roles.includes("buyer");
-const { userOptions, getUserList, userList } = useWmsStore();
+const { userOptions } = useWmsStore();
+const { bill_type } = proxy.useDict("bill_type");
 const financialList = ref([]);
 const open = ref(false);
 const buttonLoading = ref(false);
@@ -197,6 +239,9 @@ const data = reactive({
     state: undefined,
     amount: undefined,
     event: undefined,
+    lastBalance: undefined,
+    startTime: undefined,
+    endTime: undefined,
   },
   rules: {
     id: [{ required: true, message: "不能为空", trigger: "blur" }],
@@ -213,11 +258,40 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
+const shortcuts = [
+  {
+    text: "最近一周",
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+      return [start, end];
+    },
+  },
+  {
+    text: "最近一个月",
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+      return [start, end];
+    },
+  },
+  {
+    text: "最近三个月",
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+      return [start, end];
+    },
+  },
+];
+const timeRange = ref("");
 /** 查询资金明细表列表 */
 function getList() {
   loading.value = true;
   listFinancial(queryParams.value).then((response) => {
-    console.log("listFinancial", response);
     financialList.value = response.rows;
     total.value = response.total;
     loading.value = false;
@@ -227,7 +301,7 @@ function getList() {
 async function handleUserChange(value) {
   form.value.userId = value;
   await getBalance(value).then((response) => {
-    form.value.balance = response.data.balance;
+    form.value.lastBalance = response.data?.balance || 0;
   });
 }
 // 取消按钮
@@ -244,10 +318,7 @@ function reset() {
     state: 0,
     amount: null,
     event: "充值",
-    createTime: null,
-    updateTime: null,
-    createBy: null,
-    updateBy: null,
+    lastBalance: null,
   };
   proxy.resetForm("financialRef");
 }
@@ -255,6 +326,8 @@ function reset() {
 /** 搜索按钮操作 */
 function handleQuery() {
   queryParams.value.pageNum = 1;
+  queryParams.value.startTime = timeRange.value[0];
+  queryParams.value.endTime = timeRange.value[1];
   getList();
 }
 
@@ -288,7 +361,7 @@ function submitForm() {
     if (valid) {
       buttonLoading.value = true;
       if (form.value.id != null) {
-        updateFinancial(form.value)
+        updateBalance(form.value)
           .then((response) => {
             proxy.$modal.msgSuccess("修改成功");
             open.value = false;
@@ -298,9 +371,9 @@ function submitForm() {
             buttonLoading.value = false;
           });
       } else {
-        addFinancial(form.value)
+        recharge(form.value)
           .then((response) => {
-            proxy.$modal.msgSuccess("新增成功");
+            proxy.$modal.msgSuccess("充值成功");
             open.value = false;
             getList();
           })

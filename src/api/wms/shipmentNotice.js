@@ -9,6 +9,15 @@ export function listShipmentNotice(query) {
   })
 }
 
+// 查询发货请求通知单草稿列表
+export function listShipmentNoticeDraft(query) {
+  return request({
+    url: '/wms/shipmentNotice/list/draft',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询发货请求通知单详细
 export function getShipmentNotice(id) {
   return request({
@@ -40,5 +49,14 @@ export function delShipmentNotice(id) {
   return request({
     url: '/wms/shipmentNotice/' + id,
     method: 'delete'
+  })
+}
+
+//创建草稿发货通知单
+export function createDraftShipmentNotice(data) {
+  return request({
+    url: '/wms/shipmentNotice/draft',
+    method: 'post',
+    data: data
   })
 }

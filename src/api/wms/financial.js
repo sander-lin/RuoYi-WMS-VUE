@@ -59,3 +59,12 @@ export function updateBalance(data) {
     data: data
   })
 }
+
+// 充值
+export function recharge(data) {
+  return request({
+    url: '/wms/balance',
+    method: 'put',
+    data: data
+  })
+}

@@ -125,7 +125,6 @@ export const useWmsStore = defineStore("wms", () => {
             map.set(supplier.id, { ...supplier });
           });
           logisticsMap.value = map;
-          console.info("logisticsMap:", logisticsMap.value);
           resolve();
         })
         .catch(() => reject());

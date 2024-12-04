@@ -12,20 +12,21 @@
               {{ form.id }}
             </el-form-item>
             <el-form-item label="状态：" prop="status">
-              <el-select
+              <!-- <el-select
                 v-model="form.status"
                 @change="handleChangeStatus(scope.row)"
                 v-if="editAble"
               >
                 <el-option
-                  v-for="item in shipping_status.filter((i) => i.value !== '4')"
+                  v-for="item in shipping_status.filter(
+                    (i) => i.value !== shipmentNoticeStatus.yi_wan_cheng
+                  )"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
                 ></el-option>
-              </el-select>
+              </el-select> -->
               <div
-                v-else
                 style="font-weight: bold; font-size: large"
                 :style="{ color: form.status === '4' ? 'green' : 'grey' }"
               >
@@ -89,7 +90,7 @@
             >
               <template #default="{ row }">
                 <el-tag v-for="item in row.labelOption" :key="item.value">
-                  {{ order_option.find((i) => i.value === item).label }}
+                  {{ order_option.find((i) => i.value === item)?.label }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -111,13 +112,16 @@
       <div class="btn-box">
         <div></div>
         <div>
-          <el-button @click="save('4')" type="primary" v-if="receiptAble"
+          <!-- <el-button
+            @click="save(shipmentNoticeStatus.yi_wan_cheng)"
+            type="primary"
+            v-if="receiptAble"
             >确认收货</el-button
           >
           <el-button @click="save()" type="primary" v-if="editAble"
             >保存</el-button
-          >
-          <el-button @click="cancel" class="mr10">返回</el-button>
+          > -->
+          <el-button @click="close()" class="mr10">返回</el-button>
         </div>
       </div>
     </div>
@@ -144,19 +148,40 @@ import useUserStore from "@/store/modules/user";
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 const { logisticsList } = useWmsStore();
-const { label_type, order_option, shipping_status } = proxy.useDict(
-  "label_type",
-  "order_option",
-  "shipping_status"
-);
+const { label_type, order_option, shipping_status, shipping_notice_status } =
+  proxy.useDict(
+    "label_type",
+    "order_option",
+    "shipping_status",
+    "shipping_notice_status"
+  );
+
+const shipmentNoticeStatus = computed(() => {
+  const res = {
+    cao_gao: "",
+    wei_fa_huo: "",
+    bu_fen_fa_huo: "",
+    quan_bu_fa_huo: "",
+    yi_wan_cheng: "",
+    yi_guan_bi: "",
+  };
+  shipping_notice_status.value.forEach((item) => {
+    res[item.name] = item.value;
+  });
+  return res;
+});
 
 const userStore = useUserStore();
 const isBuyer = userStore.roles.includes("buyer");
 const editAble = computed(() => {
-  return !isBuyer && form.value.status !== "4";
+  return (
+    !isBuyer && form.value.status !== shipmentNoticeStatus.value.yi_wan_cheng
+  );
 });
 const receiptAble = computed(() => {
-  return isBuyer && form.value.status === "3";
+  return (
+    isBuyer && form.value.status === shipmentNoticeStatus.value.quan_bu_fa_huo
+  );
 });
 const loading = ref(false);
 const initFormData = {
@@ -174,18 +199,30 @@ const data = reactive({
 const { form } = toRefs(data);
 
 const save = (status) => {
-  ElMessageBox.confirm(status === "4" ? "确认收货吗？" : "确定保存吗？")
+  ElMessageBox.confirm(
+    status === shipmentNoticeStatus.value.quan_bu_fa_huo
+      ? "确认收货吗？"
+      : "确定保存吗？"
+  )
     .then(() => {
       loading.value = true;
       const data = {
         id: form.value.id,
-        status: status === "4" ? status : form.value.status,
+        status:
+          status === shipmentNoticeStatus.value.quan_bu_fa_huo
+            ? status
+            : form.value.status,
+        deliveryMethod: form.value.deliveryMethod,
+        shipmentNoticeId: route.query.id,
       };
       updateShipment(data).then((response) => {
         if (response.code === 200) {
           ElMessage({
             type: "success",
-            message: status === "4" ? "确认收货成功" : "修改成功",
+            message:
+              status === shipmentNoticeStatus.value.quan_bu_fa_huo
+                ? "确认收货成功"
+                : "修改成功",
           });
         }
       });
@@ -196,11 +233,10 @@ const save = (status) => {
       loading.value = false;
     });
 };
-const cancel = () => {
-  close();
-};
+
 const close = () => {
   proxy?.$router.go(-1);
+  proxy.$tab.closePage();
 };
 
 /** 查看详情按钮操作 */

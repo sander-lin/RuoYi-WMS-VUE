@@ -185,6 +185,7 @@ import {
   addShipmentNotice,
   updateShipmentNotice,
   getShipmentNotice,
+  createDraftShipmentNotice,
 } from "@/api/wms/shipmentNotice";
 import { ElMessage, ElMessageBox } from "element-plus";
 import SkuSelect from "@/views/components/SkuSelect.vue";
@@ -232,12 +233,12 @@ const { form, rules } = toRefs(data);
 
 const cancel = async () => {
   await proxy?.$modal.confirm("确认取消编辑发货通知单吗？");
-  close();
-};
-const close = (path = "/order") => {
-  const obj = { path: path };
-  proxy?.$tab.closeOpenPage(obj);
   proxy.$router.go(-1);
+  proxy?.$tab.closePage();
+};
+const close = (path = "/shipmentNotice/create") => {
+  const obj = { path: path, query: { currentTab: "shipmentNoticeDraft" } };
+  proxy?.$tab.closeOpenPage(obj);
 };
 
 const getRowKey = (row) => {
@@ -246,7 +247,7 @@ const getRowKey = (row) => {
 // 初始化receipt-order-form ref
 const orderForm = ref();
 const multipleTable = ref();
-const doSave = async (NoticeStatus = 1) => {
+const doSave = async (NoticeStatus = 0) => {
   //验证receiptForm表单
   orderForm.value?.validate((valid) => {
     // 校验
@@ -254,7 +255,6 @@ const doSave = async (NoticeStatus = 1) => {
       return ElMessage.error("请填写必填项");
     }
     if (selectItemSkuVoCheck.value?.length) {
-      console.log("提交前校验", selectItemSkuVoCheck.value);
       const invalidQuantityList = selectItemSkuVoCheck.value.filter(
         (it) => !it.quantityNotice || it.quantityNotice < 1
       );
@@ -276,13 +276,11 @@ const doSave = async (NoticeStatus = 1) => {
       orderId: form.value.orderId,
       userId: userStore.id,
       remark: form.value.remark,
-      status: NoticeStatus,
       tag: form.value.tag,
       deliveryMethod: form.value.deliveryMethod,
       merchandises: merchandises,
     };
     if (params.id) {
-      // updateOrderMerchandises()
       updateShipmentNotice(params).then((res) => {
         if (res.code === 200) {
           ElMessage.success(res.msg);
@@ -292,25 +290,36 @@ const doSave = async (NoticeStatus = 1) => {
         }
       });
     } else {
-      addShipmentNotice(params).then((res) => {
-        if (res.code === 200) {
-          ElMessage.success(res.msg);
-          NoticeStatus === 1 ? close("/order/draft") : proxy.$router.go(-1);
-        } else {
-          ElMessage.error(res.msg);
-        }
-      });
+      if (NoticeStatus === 1) {
+        createDraftShipmentNotice(params).then((res) => {
+          if (res.code === 200) {
+            ElMessage.success(res.msg);
+            close("/order/draft");
+          } else {
+            ElMessage.error(res.msg);
+          }
+        });
+      } else {
+        addShipmentNotice(params).then((res) => {
+          if (res.code === 200) {
+            ElMessage.success(res.msg);
+            proxy.$router.go(-1);
+          } else {
+            ElMessage.error(res.msg);
+          }
+        });
+      }
     }
   });
 };
 
 const saveAsDraft = async () => {
   await proxy?.$modal.confirm("确认保存为草稿吗？");
-  doSave(0);
+  doSave(1);
 };
 const AddShipmentNotice = async () => {
   await proxy?.$modal.confirm("确认发布吗？");
-  doSave(1);
+  doSave(2);
 };
 
 const route = useRoute();

@@ -225,13 +225,12 @@ const data = reactive({
 const { form, rules } = toRefs(data);
 
 const cancel = async () => {
-  await proxy?.$modal.confirm("确认取消编辑发货通知单吗？");
+  await proxy?.$modal.confirm("确认取消编辑发货单吗？");
   close();
 };
-const close = (path = "/order") => {
-  const obj = { path: path };
-  proxy?.$tab.closeOpenPage(obj);
+const close = () => {
   proxy.$router.go(-1);
+  proxy?.$tab.closePage();
 };
 
 const getRowKey = (row) => {
@@ -248,7 +247,6 @@ const doSave = async (NoticeStatus = 1) => {
       return ElMessage.error("请填写必填项");
     }
     if (selectItemSkuVoCheck.value?.length) {
-      console.log("提交前校验", selectItemSkuVoCheck.value);
       const invalidQuantityList = selectItemSkuVoCheck.value.filter(
         (it) => !it.quantityShipped || it.quantityShipped < 1
       );
@@ -276,7 +274,6 @@ const doSave = async (NoticeStatus = 1) => {
       merchandises: merchandises,
     };
     if (params.id) {
-      // updateOrderMerchandises()
       updateShipment(params).then((res) => {
         if (res.code === 200) {
           ElMessage.success(res.msg);
@@ -295,22 +292,6 @@ const doSave = async (NoticeStatus = 1) => {
         }
       });
     }
-  });
-};
-
-const updateShipmentNoticeStatus = (id, status) => {
-  loading.value = true;
-  const shipments = [];
-  getShipmentNotice(id).then((response) => {
-    shipments = response.data.shipments.forEach((it) => {
-      it.status = status;
-      return it;
-    });
-    const totalAmount = merchandises.reduce((acc, cur) => {
-      const price = parseFloat(cur.price) || 0;
-      const quantityRequired = parseInt(cur.quantityRequired) || 0;
-      return acc + price * quantityRequired;
-    }, 0);
   });
 };
 

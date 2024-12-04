@@ -49,22 +49,9 @@
           v-hasPermi="['wms:order:add']"
           >创建订单</el-button
         >
-        <!-- <el-button
-            type="warning"
-            plain
-            icon="Download"
-            @click="handleExport"
-            v-hasPermi="['wms:order:export']"
-            >导出</el-button
-          > -->
       </el-form-item>
     </el-form>
-    <el-tabs
-      v-model="queryParams.status"
-      @tab-click="handleQuery"
-      type="card"
-      v-if="!isDraft"
-    >
+    <el-tabs v-model="queryParams.status" @tab-click="handleQuery" type="card">
       <el-tab-pane name="" label="全部" />
       <el-tab-pane
         :name="item.value"
@@ -122,7 +109,6 @@
         label="订单状态"
         width="150"
         align="center"
-        v-if="!isDraft"
       >
         <template #default="scope">
           <el-select
@@ -165,26 +151,20 @@
             icon="View"
             @click="handleViewDetail(scope.row)"
             v-hasPermi="['wms:order:edit']"
-            v-if="!isDraft"
             >详情</el-button
           >
           <el-button
             link
             type="primary"
             icon="Edit"
-            @click="handleEdit(scope.row)"
-            v-hasPermi="['wms:order:edit']"
-            v-else
-            >编辑</el-button
-          >
-          <el-button
-            link
-            type="primary"
-            icon="Edit"
-            @click="handlePublish(scope.row)"
-            v-hasPermi="['wms:order:edit']"
-            v-if="isDraft"
-            >发布</el-button
+            @click="handleAddShipmentNotice(scope.row)"
+            v-hasPermi="['wms:shipmentNotice:add']"
+            v-if="
+              !scope.row.merchandises.every(
+                (it) => it.totalQuantityNotice === it.quantityRequired
+              )
+            "
+            >创建发货通知单</el-button
           >
           <el-button
             link
@@ -212,10 +192,10 @@
 <script setup name="Order">
 import { ElMessageBox, ElMessage } from "element-plus";
 import {
-  listNotDraftOrder,
-  listDraftOrder,
+  listOrder,
   delOrder,
   updateOrder,
+  updateOrderStatus,
 } from "@/api/wms/order";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
@@ -236,18 +216,15 @@ const orderList = ref([]);
 const loading = ref(true);
 const ids = ref([]);
 const total = ref(0);
-const isDraft = computed(() => {
-  return router.currentRoute.value.path.includes("draft");
-});
 
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    userId: isBuyer.value ? userStore.id : undefined,
+    userId: undefined,
     type: undefined,
-    status: isDraft.value ? "1" : "",
+    status: "",
     labelOption: undefined,
   },
   rules: {
@@ -272,52 +249,40 @@ const { queryParams, form, rules } = toRefs(data);
 function getList() {
   loading.value = true;
   nextTick(() => {
-    if (isDraft.value) {
-      listDraftOrder(queryParams.value).then((response) => {
-        orderList.value = response.rows;
-        total.value = response.total;
-        loading.value = false;
-      });
-    } else {
-      listNotDraftOrder(queryParams.value).then((response) => {
-        orderList.value = response.rows;
-        total.value = response.total;
-        loading.value = false;
-      });
-    }
+    listOrder(queryParams.value).then((response) => {
+      orderList.value = response.rows;
+      total.value = response.total;
+      loading.value = false;
+    });
   });
 }
 
 const handleChangeStatus = (row) => {
-  ElMessageBox.confirm(
-    isDraft.value ? "确定要发布订单吗？" : "确定要修改订单状态吗？",
-    "提示",
-    {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-      type: "warning",
-    }
-  )
+  ElMessageBox.confirm("确定要修改订单状态吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
     .then(() => {
       const data = {
         id: row.id,
-        status: isDraft.value ? "2" : row.status,
+        status: row.status,
         userId: row.userId,
         type: row.type,
         remark: row.remark,
         totalAmount: row.totalAmount,
       };
-      updateOrder(data).then((response) => {
+      updateOrderStatus(data).then((response) => {
         ElMessage({
           type: "success",
-          message: isDraft.value ? "发布成功" : "修改成功",
+          message: "修改成功",
         });
       });
     })
     .catch(() => {
       ElMessage({
         type: "info",
-        message: isDraft.value ? "已取消发布" : "已取消修改",
+        message: "已取消修改",
       });
       getList();
     });
@@ -353,6 +318,13 @@ function handlePublish(row) {
 function handleViewDetail(row) {
   proxy.$router.push({ path: "/order/orderDetail", query: { id: row.id } });
 }
+
+const handleAddShipmentNotice = (row) => {
+  proxy.$router.push({
+    path: "/shipmentNotice/create",
+    query: { orderId: row.id },
+  });
+};
 
 /** 删除按钮操作 */
 function handleDelete(row) {

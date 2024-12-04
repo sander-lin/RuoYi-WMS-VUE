@@ -225,7 +225,6 @@ const props = defineProps<{
   selectedItem: any;
 }>();
 
-console.log("selectedItem", props.selectedItem);
 const show = computed(() => {
   return props.modelValue;
 });

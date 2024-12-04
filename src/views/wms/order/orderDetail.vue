@@ -91,7 +91,7 @@
               >
                 <template #default="{ row }">
                   <el-tag v-for="item in row.labelOption" :key="item.value">
-                    {{ order_option.find((i) => i.value === item).label }}
+                    {{ order_option.find((i) => i.value === item)?.label }}
                   </el-tag>
                 </template>
               </el-table-column>
@@ -253,13 +253,12 @@ import {
 import { updateOrder, getOrder } from "@/api/wms/order";
 import { delShipmentNotice } from "@/api/wms/shipmentNotice";
 import { ElMessage } from "element-plus";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
 
 const { userOptions, logisticsList } = useWmsStore();
 const { proxy } = getCurrentInstance();
-const router = useRouter();
 const { order_option, order_type, order_status, shipping_notice_status } =
   proxy.useDict(
     "order_option",

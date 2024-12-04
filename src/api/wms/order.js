@@ -9,18 +9,17 @@ export function listOrder(query) {
   })
 }
 
-export function listNotDraftOrder(query) {
-  return request({
-    url: '/wms/order/listNotDraft',
-    method: 'get',
-    params: query
-  })
-}
+// export function listNotDraftOrder(query) {
+//   return request({
+//     url: '/wms/order/listNotDraft',
+//     method: 'get',
+//     params: query
+//   })
+// }
 
 export function listDraftOrder(query) {
-  query.status = 1
   return request({
-    url: '/wms/order/list',
+    url: '/wms/order/list/draft',
     method: 'get',
     params: query
   })
@@ -55,7 +54,7 @@ export function updateOrder(data) {
 // 修改订单状态
 export function updateOrderStatus(data) {
   return request({
-    url: '/wms/order',
+    url: '/wms/order/status',
     method: 'put',
     data: data
   })
@@ -69,19 +68,20 @@ export function delOrder(id) {
   })
 }
 
-// 查询订单关联商品
-// export function listMerchandiseByOrderId(id) {
-//   return request({
-//     url: '/wms/order/listMerchandiseByOrderId/' + id,
-//     method: 'get'
-//   })
-// }
+//创建草稿订单
+export function createDraftOrder(data) {
+  return request({
+    url: '/wms/order/draft',
+    method: 'post',
+    data: data
+  })
+}
 
-// // 查询发货通知单关联商品
-// export function listMerchandiseByNoticeId(id) {
-//   return request({
-//     url: '/wms/order/listMerchandiseByNoticeId/' + id,
-//     method: 'get'
-//   })
-// }
-
+// 发布订单草稿
+export function publishDraftOrder(data) {
+  return request({
+    url: '/wms/order/publish',
+    method: 'put',
+    data: data
+  })
+}

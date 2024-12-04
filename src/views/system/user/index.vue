@@ -111,7 +111,7 @@
           v-if="columns[4].visible"
           width="120"
         />
-        <el-table-column
+        <!-- <el-table-column
           label="余额"
           align="center"
           key="balance"
@@ -122,7 +122,7 @@
           <template #default="scope">
             <span>{{ scope.row.balance || "--" }}</span>
           </template>
-        </el-table-column>
+        </el-table-column> -->
         <el-table-column
           label="状态"
           align="center"
@@ -515,7 +515,6 @@ function getList() {
         };
       });
       total.value = res.total;
-      console.log("queryParams", userList.value);
     }
   );
 }

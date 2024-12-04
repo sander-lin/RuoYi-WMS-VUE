@@ -162,7 +162,12 @@ import {
   toRefs,
   watch,
 } from "vue";
-import { addOrder, updateOrder, getOrder } from "@/api/wms/order";
+import {
+  addOrder,
+  updateOrder,
+  getOrder,
+  createDraftOrder,
+} from "@/api/wms/order";
 import { updateUserBalance } from "@/api/system/user";
 import { ElMessage, ElMessageBox } from "element-plus";
 import SkuSelect from "@/views/components/SkuSelect.vue";
@@ -257,7 +262,6 @@ const doSave = async (OrderStatus = 0) => {
       return ElMessage.error("请填写必填项");
     }
     if (form.value.merchandises?.length) {
-      console.log("提交前校验", form.value.merchandises);
       const invalidQuantityList = form.value.merchandises.filter(
         (it) => !it.quantityRequired
       );
@@ -294,14 +298,26 @@ const doSave = async (OrderStatus = 0) => {
         }
       });
     } else {
-      addOrder(params).then((res) => {
-        if (res.code === 200) {
-          ElMessage.success(res.msg);
-          OrderStatus === 1 ? close("/order/draft") : close();
-        } else {
-          ElMessage.error(res.msg);
-        }
-      });
+      if (OrderStatus === 1) {
+        createDraftOrder(params).then((res) => {
+          if (res.code === 200) {
+            ElMessage.success(res.msg);
+            close("/order/draft");
+          } else {
+            ElMessage.error(res.msg);
+          }
+        });
+      } else {
+        addOrder(params).then((res) => {
+          if (res.code === 200) {
+            ElMessage.success(res.msg);
+            close();
+            userStore.getInfo();
+          } else {
+            ElMessage.error(res.msg);
+          }
+        });
+      }
     }
   });
 };
@@ -317,14 +333,6 @@ const AddOrder = async () => {
   } else {
     await proxy?.$modal.confirm("确认发布吗？");
     doSave(2);
-    updateUserBalance({
-      userId: userStore.id,
-      balance: numSub(parseFloat(userStore.balance), totalPrice.value),
-    }).then((res) => {
-      if (res.code === 200) {
-        userStore.updateBalance();
-      }
-    });
   }
 };
 

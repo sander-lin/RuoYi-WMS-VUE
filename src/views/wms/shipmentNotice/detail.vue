@@ -108,6 +108,7 @@
               @click="showAddItem"
               icon="Plus"
               v-hasPermi="['wms:shipment:add']"
+              :disabled="form.status === '4'"
               >创建发货单</el-button
             >
           </div>
@@ -313,9 +314,8 @@ const cancel = () => {
   // await proxy?.$modal.confirm("确认取消编辑发货通知单吗？");
   close();
 };
-const close = (path = "/shipmentNotice") => {
-  // const obj = { path: path };
-  // proxy?.$tab.closeOpenPage(obj);
+const close = () => {
+  proxy?.$tab.closePage();
   proxy?.$router.go(-1);
 };
 
@@ -394,6 +394,8 @@ const handleReceipt = (row, status) => {
       const data = {
         id: row.id,
         status: status === "4" ? status : row.status,
+        deliveryMethod: row.deliveryMethod,
+        shipmentNoticeId: form.value.id,
       };
       updateShipment(data).then((response) => {
         if (response.code === 200) {

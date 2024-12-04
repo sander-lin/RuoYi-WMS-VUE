@@ -457,7 +457,6 @@ const doSave = (movementOrderStatus = 0) => {
       });
     }
 
-    //console.log('提交前校验',form.value)
     const params = {
       id: form.value.id,
       movementOrderNo: form.value.movementOrderNo,

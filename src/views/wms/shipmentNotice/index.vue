@@ -25,7 +25,9 @@
       <el-tab-pane name="" label="全部" />
       <el-tab-pane
         :name="item.value"
-        v-for="item in shipping_notice_status"
+        v-for="item in shipping_notice_status.filter(
+          (item) => item.value !== '1'
+        )"
         :key="item.value"
         :label="item.label"
       />
@@ -80,7 +82,12 @@
           <dict-tag :options="shipping_notice_status" :value="row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="所属客户" prop="userId" align="center">
+      <el-table-column
+        label="所属客户"
+        prop="userId"
+        align="center"
+        v-if="!isBuyer"
+      >
         <template #default="scope">
           {{
             userOptions.find(
@@ -157,25 +164,26 @@ import {
   updateShipmentNotice,
 } from "@/api/wms/shipmentNotice";
 import { useWmsStore } from "@/store/modules/wms";
+import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
 
 const { userOptions } = useWmsStore();
-const router = useRouter();
+const userStore = useUserStore();
 const { order_option, shipping_notice_status } = proxy.useDict(
   "order_status",
   "order_type",
   "order_option",
   "shipping_notice_status"
 );
-
+const isBuyer = computed(() => {
+  return userStore.roles[0] === "buyer";
+});
 const { logisticsList } = useWmsStore();
 const noticeList = ref([]);
-const open = ref(false);
 const loading = ref(true);
 const ids = ref([]);
 const total = ref(0);
-const isDraft = ref(false);
 const data = reactive({
   queryParams: {
     pageNum: 1,
@@ -201,34 +209,6 @@ function getList() {
   });
 }
 
-let previousOrderId = null;
-function objectSpanMethod({ row, column, rowIndex, columnIndex }) {
-  if (columnIndex === 0) {
-    // 检查当前行的 orderId 是否与上一行相同
-    if (previousOrderId === row.orderId) {
-      return {
-        rowspan: 0,
-        colspan: 0, // 当前行不显示
-      };
-    } else {
-      // 找到相同的 orderId 所有连续行的数量
-      let rowspan = 1;
-      for (let i = rowIndex + 1; i < noticeList.value.length; i++) {
-        if (noticeList.value[i].orderId === row.orderId) {
-          rowspan++;
-        } else {
-          break; // 如果没有相同的 orderId 就停止
-        }
-      }
-      previousOrderId = row.orderId; // 更新后一个 orderId
-      return {
-        rowspan: rowspan, // 返回合并的行数
-        colspan: 1,
-      };
-    }
-  }
-}
-
 /** 搜索按钮操作 */
 function handleQuery() {
   queryParams.value.pageNum = 1;
@@ -244,9 +224,6 @@ function resetQuery() {
 
 /** 新增按钮操作 */
 function handleAdd(row) {
-  // reset();
-  // open.value = true;
-  // title.value = "添加订单表";
   proxy.$router.push({
     path: "/shipment/create",
     query: { shipmentId: row.id },
@@ -254,15 +231,11 @@ function handleAdd(row) {
 }
 
 const handleChangeStatus = (row) => {
-  ElMessageBox.confirm(
-    isDraft.value ? "确定要发布订单吗？" : "确定要关闭该发货通知单吗？",
-    "提示",
-    {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-      type: "warning",
-    }
-  )
+  ElMessageBox.confirm("确定要关闭该发货通知单吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
     .then(() => {
       const data = {
         id: row.id,
@@ -276,7 +249,7 @@ const handleChangeStatus = (row) => {
       updateShipmentNotice(data).then((response) => {
         ElMessage({
           type: "success",
-          message: isDraft.value ? "发布成功" : "关闭成功",
+          message: "关闭成功",
         });
       });
       getList();
@@ -284,7 +257,7 @@ const handleChangeStatus = (row) => {
     .catch(() => {
       ElMessage({
         type: "info",
-        message: isDraft.value ? "已取消发布" : "已取消关闭",
+        message: "已取消关闭",
       });
     });
 };
