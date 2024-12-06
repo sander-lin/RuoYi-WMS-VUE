@@ -225,10 +225,12 @@ import {
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
 import { useRoute } from "vue-router";
+import mapData from "../../../utils/mapData";
 
+const { order_type, orderStatusMap, noticeStatusMap } = mapData;
 const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
-const { order_type } = proxy.useDict("order_type");
+
 const { logisticsList } = useWmsStore();
 const route = useRoute();
 const tabOptions = ref([
@@ -274,7 +276,7 @@ const handleUpdate = (row) => {
   if (currentTab.value === "orderDraft") {
     const data = {
       id: row.id,
-      status: "2",
+      status: orderStatusMap.mai_fu_zhong,
       userId: row.userId,
       type: row.type,
       remark: row.remark,
@@ -292,7 +294,7 @@ const handleUpdate = (row) => {
   } else if (currentTab.value === "shipmentNoticeDraft") {
     const data = {
       id: row.id,
-      status: "2",
+      status: noticeStatusMap.wei_fa_huo,
       userId: row.userId,
       orderId: row.orderId,
       tag: row.tag,

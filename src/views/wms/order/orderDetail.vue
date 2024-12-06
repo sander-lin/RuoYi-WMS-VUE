@@ -10,8 +10,8 @@
           <el-form-item label="订单状态：" prop="status">
             <el-select v-model="form.status" placeholder="请选择">
               <el-option
-                v-for="item in order_status.filter(
-                  (item) => item.value !== '1'
+                v-for="item in order_status?.filter(
+                  (item) => item.value !== orderStatusMap.cao_gao
                 )"
                 :key="item.value"
                 :label="item.label"
@@ -33,7 +33,7 @@
                 {{ form.id }}</el-descriptions-item
               >
               <el-descriptions-item label="订单类型">{{
-                order_type.find((i) => i.value === form.type)?.label
+                order_type?.find((i) => i.value === form.type)?.label
               }}</el-descriptions-item>
               <el-descriptions-item label="创建时间">{{
                 form.createTime
@@ -91,7 +91,7 @@
               >
                 <template #default="{ row }">
                   <el-tag v-for="item in row.labelOption" :key="item.value">
-                    {{ order_option.find((i) => i.value === item)?.label }}
+                    {{ order_option?.find((i) => i.value === item)?.label }}
                   </el-tag>
                 </template>
               </el-table-column>
@@ -213,7 +213,12 @@
                   type="primary"
                   @click="handleAdd(scope.row)"
                   v-hasPermi="['wms:shipment:add']"
-                  v-if="['1', '2'].includes(scope.row.status)"
+                  v-if="
+                    [
+                      noticeStatusMap.wei_fa_huo,
+                      noticeStatusMap.bu_fen_fa_huo,
+                    ].includes(scope.row.status)
+                  "
                   >创建发货单</el-button
                 >
                 <el-button
@@ -256,16 +261,18 @@ import { ElMessage } from "element-plus";
 import { useRoute } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
+import mapData from "../../../utils/mapData";
 
 const { userOptions, logisticsList } = useWmsStore();
 const { proxy } = getCurrentInstance();
-const { order_option, order_type, order_status, shipping_notice_status } =
-  proxy.useDict(
-    "order_option",
-    "order_type",
-    "order_status",
-    "shipping_notice_status"
-  );
+const {
+  order_status,
+  order_type,
+  order_option,
+  shipping_notice_status,
+  noticeStatusMap,
+  orderStatusMap,
+} = mapData;
 const userStore = useUserStore();
 const mode = ref(false);
 const loading = ref(false);

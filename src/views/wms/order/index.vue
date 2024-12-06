@@ -55,7 +55,9 @@
       <el-tab-pane name="" label="全部" />
       <el-tab-pane
         :name="item.value"
-        v-for="item in order_status.filter((item) => item.value !== '1')"
+        v-for="item in order_status.filter(
+          (item) => item.value !== orderStatusMap.cao_gao
+        )"
         :key="item.value"
         :label="item.label"
       />
@@ -116,11 +118,12 @@
             @change="handleChangeStatus(scope.row)"
           >
             <el-option
-              v-for="item in order_status.filter((item) => item.value !== '1')"
+              v-for="item in order_status.filter(
+                (item) => item.value !== orderStatusMap.cao_gao
+              )"
               :key="item.value"
               :label="item.label"
               :value="item.value"
-              :disabled="item.value === '1'"
             ></el-option>
           </el-select>
         </template>
@@ -172,6 +175,11 @@
             icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['wms:order:remove']"
+            v-if="
+              scope.row.merchandises.every(
+                (it) => it.totalQuantityNotice === null
+              )
+            "
             >删除</el-button
           >
         </template>
@@ -199,16 +207,13 @@ import {
 } from "@/api/wms/order";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
+import mapData from "../../../utils/mapData";
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
 const { userOptions } = useWmsStore();
-const router = useRouter();
-const { order_status, order_type } = proxy.useDict(
-  "order_status",
-  "order_type"
-);
 
+const { order_status, order_type, orderStatusMap } = mapData;
 const isBuyer = computed(() => {
   return userStore.roles[0] === "buyer";
 });
@@ -330,7 +335,7 @@ const handleAddShipmentNotice = (row) => {
 function handleDelete(row) {
   const _ids = row.id || ids.value;
   proxy.$modal
-    .confirm('是否确认删除订单表编号为"' + _ids + '"的数据项？')
+    .confirm("确认删除后订单付款将退还至原账户，是否继续？")
     .then(function () {
       loading.value = true;
       return delOrder(_ids);
@@ -338,6 +343,7 @@ function handleDelete(row) {
     .then(() => {
       loading.value = true;
       getList();
+      userStore.getInfo();
       proxy.$modal.msgSuccess("删除成功");
     })
     .catch(() => {})

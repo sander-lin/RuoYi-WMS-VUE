@@ -19,7 +19,7 @@
               >
                 <el-option
                   v-for="item in shipping_status.filter(
-                    (i) => i.value !== shipmentNoticeStatus.yi_wan_cheng
+                    (i) => i.value !== noticeStatusMap.yi_wan_cheng
                   )"
                   :key="item.value"
                   :label="item.label"
@@ -31,7 +31,7 @@
                 :style="{ color: form.status === '4' ? 'green' : 'grey' }"
               >
                 {{
-                  shipping_status.find((i) => i.value === form.status)?.label
+                  shipping_status?.find((i) => i.value === form.status)?.label
                 }}
               </div>
             </el-form-item>
@@ -90,7 +90,7 @@
             >
               <template #default="{ row }">
                 <el-tag v-for="item in row.labelOption" :key="item.value">
-                  {{ order_option.find((i) => i.value === item)?.label }}
+                  {{ order_option?.find((i) => i.value === item)?.label }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -113,7 +113,7 @@
         <div></div>
         <div>
           <!-- <el-button
-            @click="save(shipmentNoticeStatus.yi_wan_cheng)"
+            @click="save(noticeStatusMap.yi_wan_cheng)"
             type="primary"
             v-if="receiptAble"
             >确认收货</el-button
@@ -135,53 +135,25 @@ import {
   onMounted,
   reactive,
   ref,
-  toRef,
   toRefs,
-  watch,
 } from "vue";
 import { getShipment, updateShipment } from "@/api/wms/shipment";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
+import mapData from "../../../utils/mapData";
 
 const { proxy } = getCurrentInstance();
-const router = useRouter();
+const { label_type, order_option, shipping_status, noticeStatusMap } = mapData;
 const { logisticsList } = useWmsStore();
-const { label_type, order_option, shipping_status, shipping_notice_status } =
-  proxy.useDict(
-    "label_type",
-    "order_option",
-    "shipping_status",
-    "shipping_notice_status"
-  );
-
-const shipmentNoticeStatus = computed(() => {
-  const res = {
-    cao_gao: "",
-    wei_fa_huo: "",
-    bu_fen_fa_huo: "",
-    quan_bu_fa_huo: "",
-    yi_wan_cheng: "",
-    yi_guan_bi: "",
-  };
-  shipping_notice_status.value.forEach((item) => {
-    res[item.name] = item.value;
-  });
-  return res;
-});
-
 const userStore = useUserStore();
 const isBuyer = userStore.roles.includes("buyer");
 const editAble = computed(() => {
-  return (
-    !isBuyer && form.value.status !== shipmentNoticeStatus.value.yi_wan_cheng
-  );
+  return !isBuyer && form.value.status !== noticeStatusMap.yi_wan_cheng;
 });
 const receiptAble = computed(() => {
-  return (
-    isBuyer && form.value.status === shipmentNoticeStatus.value.quan_bu_fa_huo
-  );
+  return isBuyer && form.value.status === noticeStatusMap.quan_bu_fa_huo;
 });
 const loading = ref(false);
 const initFormData = {
@@ -200,16 +172,14 @@ const { form } = toRefs(data);
 
 const save = (status) => {
   ElMessageBox.confirm(
-    status === shipmentNoticeStatus.value.quan_bu_fa_huo
-      ? "确认收货吗？"
-      : "确定保存吗？"
+    status === noticeStatusMap.quan_bu_fa_huo ? "确认收货吗？" : "确定保存吗？"
   )
     .then(() => {
       loading.value = true;
       const data = {
         id: form.value.id,
         status:
-          status === shipmentNoticeStatus.value.quan_bu_fa_huo
+          status === noticeStatusMap.quan_bu_fa_huo
             ? status
             : form.value.status,
         deliveryMethod: form.value.deliveryMethod,
@@ -220,7 +190,7 @@ const save = (status) => {
           ElMessage({
             type: "success",
             message:
-              status === shipmentNoticeStatus.value.quan_bu_fa_huo
+              status === noticeStatusMap.quan_bu_fa_huo
                 ? "确认收货成功"
                 : "修改成功",
           });

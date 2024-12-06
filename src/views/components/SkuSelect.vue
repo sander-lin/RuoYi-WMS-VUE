@@ -51,7 +51,7 @@
         <template #default="{ row }">
           <el-checkbox
             v-model="row.isSelected"
-            :disabled="selectedItem.includes(row.id)"
+            :disabled="selectedItem?.includes(row.id)"
             @change="handleSelectionChange(row)"
           />
         </template>
@@ -73,7 +73,7 @@
         <template #default="scope">
           {{
             userOptions.find(
-              (item) => item.value === parseInt(scope.row.userId)
+              (item) => item.value.toString() === scope.row.userId
             )?.label
           }}
         </template>
@@ -173,7 +173,6 @@ const loadAll = () => {
     ...query,
     pageNum: pageReqCopy.page,
     pageSize: pageReqCopy.size,
-    userId: userStore.id,
   };
   loading.value = true;
   listMerchandise(data)

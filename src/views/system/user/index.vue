@@ -108,26 +108,14 @@
           align="center"
           key="phonenumber"
           prop="phonenumber"
-          v-if="columns[4].visible"
+          v-if="columns[3].visible"
           width="120"
         />
-        <!-- <el-table-column
-          label="余额"
-          align="center"
-          key="balance"
-          props="balance"
-          v-if="columns[3].visible"
-          :show-overflow-tooltip="true"
-        >
-          <template #default="scope">
-            <span>{{ scope.row.balance || "--" }}</span>
-          </template>
-        </el-table-column> -->
         <el-table-column
           label="状态"
           align="center"
           key="status"
-          v-if="columns[5].visible"
+          v-if="columns[4].visible"
         >
           <template #default="scope">
             <el-switch
@@ -142,7 +130,7 @@
           label="创建时间"
           align="center"
           prop="createTime"
-          v-if="columns[6].visible"
+          v-if="columns[5].visible"
           width="160"
         >
           <template #default="scope">
@@ -446,10 +434,9 @@ const columns = ref([
   { key: 0, label: `用户编号`, visible: true },
   { key: 1, label: `用户名称`, visible: true },
   { key: 2, label: `用户昵称`, visible: true },
-  { key: 3, label: `余额`, visible: true },
-  { key: 4, label: `手机号码`, visible: true },
-  { key: 5, label: `状态`, visible: true },
-  { key: 6, label: `创建时间`, visible: true },
+  { key: 3, label: `手机号码`, visible: true },
+  { key: 4, label: `状态`, visible: true },
+  { key: 5, label: `创建时间`, visible: true },
 ]);
 
 const data = reactive({

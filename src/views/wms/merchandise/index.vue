@@ -97,7 +97,7 @@
           <template #default="scope">
             {{
               userOptions.find(
-                (item) => item.value === parseInt(scope.row.userId)
+                (item) => item.value.toString() === scope.row.userId
               )?.label
             }}
           </template>

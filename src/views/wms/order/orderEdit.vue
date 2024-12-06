@@ -168,20 +168,18 @@ import {
   getOrder,
   createDraftOrder,
 } from "@/api/wms/order";
-import { updateUserBalance } from "@/api/system/user";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import SkuSelect from "@/views/components/SkuSelect.vue";
 import { useRoute, useRouter } from "vue-router";
 import useUserStore from "@/store/modules/user";
-import { numSub, generateNo } from "@/utils/ruoyi";
+import { generateNo } from "@/utils/ruoyi";
+import mapData from "../../../utils/mapData";
+
+const { order_type, order_option, orderStatusMap } = mapData;
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
-const { wms_receipt_type, order_option, order_type } = proxy.useDict(
-  "wms_receipt_type",
-  "order_option",
-  "order_type"
-);
+
 const currentPath = computed(() => {
   return router.currentRoute.value.path;
 });
@@ -254,7 +252,7 @@ const totalPrice = computed(() => {
     return acc + price * quantityRequired;
   }, 0);
 });
-const doSave = async (OrderStatus = 0) => {
+const doSave = async (OrderStatus) => {
   //验证receiptForm表单
   orderForm.value?.validate((valid) => {
     // 校验
@@ -292,13 +290,15 @@ const doSave = async (OrderStatus = 0) => {
       updateOrder(params).then((res) => {
         if (res.code === 200) {
           ElMessage.success(res.msg);
-          OrderStatus === 1 ? close("/order/draft") : close();
+          OrderStatus === orderStatusMap.cao_gao
+            ? close("/order/draft")
+            : close();
         } else {
           ElMessage.error(res.msg);
         }
       });
     } else {
-      if (OrderStatus === 1) {
+      if (OrderStatus === orderStatusMap.cao_gao) {
         createDraftOrder(params).then((res) => {
           if (res.code === 200) {
             ElMessage.success(res.msg);
@@ -324,15 +324,15 @@ const doSave = async (OrderStatus = 0) => {
 
 const saveAsDraft = async () => {
   await proxy?.$modal.confirm("确认保存为草稿吗？");
-  doSave(1);
+  doSave(orderStatusMap.cao_gao);
 };
 const AddOrder = async () => {
   if (totalPrice.value > userStore.balance) {
     await proxy?.$modal.confirm("余额不足, 是否先保存为草稿？");
-    doSave(1);
+    doSave(orderStatusMap.cao_gao);
   } else {
     await proxy?.$modal.confirm("确认发布吗？");
-    doSave(2);
+    doSave(orderStatusMap.mai_fu_zhong);
   }
 };
 

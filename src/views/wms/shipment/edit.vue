@@ -179,25 +179,21 @@ import {
   toRefs,
   watch,
 } from "vue";
-import { addShipment, updateShipment, getShipment } from "@/api/wms/shipment";
+import { addShipment, updateShipment } from "@/api/wms/shipment";
 import { getShipmentNotice } from "@/api/wms/shipmentNotice";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { useRoute } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
-import { numSub, generateNo } from "@/utils/ruoyi";
+import { generateNo } from "@/utils/ruoyi";
+import mapData from "../../../utils/mapData";
 
 const { proxy } = getCurrentInstance();
-const router = useRouter();
-const { label_type, order_option, order_type } = proxy.useDict(
-  "label_type",
-  "order_option",
-  "order_type"
-);
+
+const { label_type, order_option } = mapData;
 const { logisticsList } = useWmsStore();
 
 const userStore = useUserStore();
-const mode = ref(false);
 const loading = ref(false);
 const selectItemSkuVoCheck = ref([]);
 const initFormData = {

@@ -30,7 +30,7 @@
             <el-descriptions border>
               <el-descriptions-item label="希望配送方法">
                 {{
-                  logisticsList.find((item) => item.id === form.deliveryMethod)
+                  logisticsList?.find((item) => item.id === form.deliveryMethod)
                     ?.name
                 }}
               </el-descriptions-item>
@@ -80,7 +80,7 @@
             >
               <template #default="{ row }">
                 <el-tag v-for="item in row.labelOption" :key="item.value">
-                  {{ order_option.find((i) => i.value === item)?.label }}
+                  {{ order_option?.find((i) => i.value === item)?.label }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -108,7 +108,13 @@
               @click="showAddItem"
               icon="Plus"
               v-hasPermi="['wms:shipment:add']"
-              :disabled="form.status === '4'"
+              :disabled="
+                [
+                  noticeStatusMap.quan_bu_fa_huo,
+                  noticeStatusMap.yi_wan_cheng,
+                  noticeStatusMap.yi_guan_bi,
+                ].includes(form.status)
+              "
               >创建发货单</el-button
             >
           </div>
@@ -175,7 +181,7 @@
                 <el-select v-model="row.status" v-if="isEditingRow(row)">
                   <el-option
                     v-for="item in shipping_status.filter(
-                      (i) => i.value !== '4'
+                      (i) => i.value !== shippingStatusMap.yi_dao_huo
                     )"
                     :key="item.value"
                     :label="item.label"
@@ -195,7 +201,13 @@
               class-name="small-padding fixed-width"
             >
               <template #default="scope">
-                <div v-if="!isBuyer && scope.row.status !== '4' && !isEditing">
+                <div
+                  v-if="
+                    !isBuyer &&
+                    scope.row.status !== shippingStatusMap.yi_dao_huo &&
+                    !isEditing
+                  "
+                >
                   <el-button
                     link
                     type="primary"
@@ -219,9 +231,14 @@
                   link
                   type="primary"
                   icon="Edit"
-                  @click="handleReceipt(scope.row, '4')"
+                  @click="
+                    handleReceipt(scope.row, shippingStatusMap.yi_dao_huo)
+                  "
                   v-hasPermi="['wms:shipment:edit']"
-                  v-if="isBuyer && scope.row.status === '3'"
+                  v-if="
+                    isBuyer &&
+                    scope.row.status === shippingStatusMap.guo_ji_shu_song_zhong
+                  "
                   >确认收货</el-button
                 >
                 <el-button
@@ -243,7 +260,7 @@
         <div></div>
         <div>
           <!-- <el-button @click="AddNotice" type="primary">保存</el-button> -->
-          <el-button @click="cancel" class="mr10">返回</el-button>
+          <el-button @click="close" class="mr10">返回</el-button>
         </div>
       </div>
     </div>
@@ -251,45 +268,31 @@
 </template>
 
 <script setup name="ShipmentNoticeEdit">
-import {
-  computed,
-  getCurrentInstance,
-  onMounted,
-  reactive,
-  ref,
-  toRef,
-  toRefs,
-  watch,
-} from "vue";
-import {
-  addShipmentNotice,
-  updateShipmentNotice,
-  getShipmentNotice,
-} from "@/api/wms/shipmentNotice";
+import { getCurrentInstance, onMounted, reactive, ref, toRefs } from "vue";
+import { getShipmentNotice } from "@/api/wms/shipmentNotice";
 import { delShipment, updateShipment } from "@/api/wms/shipment";
 import { ElMessage, ElMessageBox } from "element-plus";
-import SkuSelect from "@/views/components/SkuSelect.vue";
 import { useRoute, useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
-import { numSub, generateNo } from "@/utils/ruoyi";
+import mapData from "../../../utils/mapData";
+
+const {
+  label_type,
+  order_option,
+  shipping_status,
+  shipping_notice_status,
+  shippingStatusMap,
+  noticeStatusMap,
+} = mapData;
 
 const { proxy } = getCurrentInstance();
-const router = useRouter();
 const { logisticsList } = useWmsStore();
-const { label_type, order_option, shipping_status, shipping_notice_status } =
-  proxy.useDict(
-    "label_type",
-    "order_option",
-    "shipping_status",
-    "shipping_notice_status"
-  );
 
 const userStore = useUserStore();
 const isBuyer = userStore.roles.includes("buyer");
 const editingRow = ref(null);
 const isEditing = ref(false);
-const mode = ref(false);
 const loading = ref(false);
 const initFormData = {
   id: undefined,
@@ -310,10 +313,6 @@ const data = reactive({
 });
 const { form, queryParams } = toRefs(data);
 
-const cancel = () => {
-  // await proxy?.$modal.confirm("确认取消编辑发货通知单吗？");
-  close();
-};
 const close = () => {
   proxy?.$tab.closePage();
   proxy?.$router.go(-1);
@@ -382,7 +381,7 @@ const loadDetail = (id) => {
 
 const handleReceipt = (row, status) => {
   ElMessageBox.confirm(
-    status === "4" ? "确认收货吗？" : "确定保存吗？",
+    status === shippingStatusMap.yi_dao_huo ? "确认收货吗？" : "确定保存吗？",
     "提示",
     {
       confirmButtonText: "确定",
@@ -393,7 +392,7 @@ const handleReceipt = (row, status) => {
     .then(() => {
       const data = {
         id: row.id,
-        status: status === "4" ? status : row.status,
+        status: status === shippingStatusMap.yi_dao_huo ? status : row.status,
         deliveryMethod: row.deliveryMethod,
         shipmentNoticeId: form.value.id,
       };
@@ -401,7 +400,10 @@ const handleReceipt = (row, status) => {
         if (response.code === 200) {
           ElMessage({
             type: "success",
-            message: status === "4" ? "确认收货成功" : "修改成功",
+            message:
+              status === shippingStatusMap.yi_dao_huo
+                ? "确认收货成功"
+                : "修改成功",
           });
         }
       });
@@ -410,7 +412,10 @@ const handleReceipt = (row, status) => {
     .catch(() => {
       ElMessage({
         type: "info",
-        message: status === "4" ? "已取消确认收货" : "已取消修改",
+        message:
+          status === shippingStatusMap.yi_dao_huo
+            ? "已取消确认收货"
+            : "已取消修改",
       });
       loadDetail(route.query.id);
     });

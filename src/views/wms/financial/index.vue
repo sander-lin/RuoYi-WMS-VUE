@@ -35,17 +35,19 @@
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="日期范围" prop="timeRange">
+        <el-form-item label="日期范围">
           <el-date-picker
-            v-model="timeRange"
+            v-model="daterange"
             type="daterange"
-            align="right"
-            unlink-panels
-            range-separator="至"
+            range-separator="-"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
             :shortcuts="shortcuts"
             value-format="YYYY-MM-DD HH:mm:ss"
+            :default-time="[
+              new Date(2000, 1, 1, 0, 0, 0),
+              new Date(2000, 1, 1, 23, 59, 59),
+            ]"
           >
           </el-date-picker>
         </el-form-item>
@@ -64,20 +66,20 @@
           <div class="balance-title">
             <strong>收入</strong>
           </div>
-          <div class="income">¥ 4000</div>
+          <div class="income">¥ {{ totalIncome }}</div>
         </el-col>
         <el-col :span="8" class="balance-section">
           <div class="balance-title">
             <strong>支出</strong>
           </div>
-          <div class="expense">¥ 1000</div>
+          <div class="expense">¥ {{ totalExpenditure }}</div>
         </el-col>
-        <el-col :span="8" class="balance-section">
+        <!-- <el-col :span="8" class="balance-section">
           <div class="balance-title">
-            <strong>账户余额</strong>
+            <strong>总计</strong>
           </div>
-          <div class="balance">¥ 3000</div>
-        </el-col>
+          <div class="balance">¥ {{ totalIncome - totalExpenditure }}</div>
+        </el-col> -->
       </el-row>
     </el-card>
     <el-card class="mt20">
@@ -117,7 +119,7 @@
           <template #default="scope">
             {{
               userOptions.find(
-                (item) => item.value === parseInt(scope.row.userId)
+                (item) => item.value.toString() === scope.row.userId
               )?.label
             }}
           </template>
@@ -137,7 +139,27 @@
           prop="event"
           v-if="isBuyer"
           align="center"
-        />
+        >
+          <template #default="scope">
+            <span>
+              <span v-if="scope.row.event?.includes('订单支出')">
+                {{ scope.row.event.split("： ")[0] }}：
+                <a
+                  v-if="scope.row.event?.includes('订单支出')"
+                  @click="handleViewDetail(scope.row.event.split('： ')[1])"
+                  target="_blank"
+                  style="color: #009bf9; text-decoration: none"
+                >
+                  {{ scope.row.event.split("： ")[1] }}
+                </a>
+              </span>
+
+              <span v-else>
+                {{ scope.row.event }}
+              </span>
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column label="金额" prop="amount" align="center" />
         <el-table-column label="日期" prop="createTime" align="center" />
         <el-table-column
@@ -222,6 +244,8 @@ const userStore = useUserStore();
 const isBuyer = userStore.roles.includes("buyer");
 const { userOptions } = useWmsStore();
 const { bill_type } = proxy.useDict("bill_type");
+const totalExpenditure = ref();
+const totalIncome = ref();
 const financialList = ref([]);
 const open = ref(false);
 const buttonLoading = ref(false);
@@ -229,6 +253,7 @@ const loading = ref(true);
 const ids = ref([]);
 const total = ref(0);
 const title = ref("");
+const daterange = ref([]);
 
 const data = reactive({
   form: {},
@@ -236,12 +261,10 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     userId: undefined,
-    state: undefined,
+    state: isBuyer ? undefined : 0,
     amount: undefined,
     event: undefined,
     lastBalance: undefined,
-    startTime: undefined,
-    endTime: undefined,
   },
   rules: {
     id: [{ required: true, message: "不能为空", trigger: "blur" }],
@@ -287,15 +310,24 @@ const shortcuts = [
     },
   },
 ];
-const timeRange = ref("");
+
 /** 查询资金明细表列表 */
 function getList() {
   loading.value = true;
-  listFinancial(queryParams.value).then((response) => {
-    financialList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+  listFinancial(proxy.addDateRange(queryParams.value, daterange.value)).then(
+    (response) => {
+      financialList.value = response.rows;
+      totalExpenditure.value = response.totalExpenditure;
+      totalIncome.value = response.totalIncome;
+      total.value = response.total;
+      loading.value = false;
+    }
+  );
+}
+
+function handleViewDetail(orderId) {
+  console.log("orderId", orderId);
+  proxy.$router.push({ path: "/order/orderDetail", query: { id: orderId } });
 }
 
 async function handleUserChange(value) {
@@ -326,14 +358,13 @@ function reset() {
 /** 搜索按钮操作 */
 function handleQuery() {
   queryParams.value.pageNum = 1;
-  queryParams.value.startTime = timeRange.value[0];
-  queryParams.value.endTime = timeRange.value[1];
   getList();
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm("queryRef");
+  daterange.value = [];
   handleQuery();
 }
 

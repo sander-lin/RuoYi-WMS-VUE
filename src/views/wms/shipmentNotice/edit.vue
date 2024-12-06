@@ -170,41 +170,26 @@
 </template>
 
 <script setup name="ReceiptOrderEdit">
-import {
-  computed,
-  getCurrentInstance,
-  onMounted,
-  reactive,
-  ref,
-  toRef,
-  toRefs,
-  watch,
-} from "vue";
+import { getCurrentInstance, onMounted, reactive, ref, toRefs } from "vue";
 import { listMerchandiseByOrderId } from "@/api/wms/merchandise";
 import {
   addShipmentNotice,
   updateShipmentNotice,
-  getShipmentNotice,
   createDraftShipmentNotice,
 } from "@/api/wms/shipmentNotice";
-import { ElMessage, ElMessageBox } from "element-plus";
-import SkuSelect from "@/views/components/SkuSelect.vue";
-import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { useRoute } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
-import { numSub, generateNo } from "@/utils/ruoyi";
+import { generateNo } from "@/utils/ruoyi";
+import mapData from "../../../utils/mapData";
+
+const { label_type, order_option, noticeStatusMap } = mapData;
 
 const { proxy } = getCurrentInstance();
-const router = useRouter();
-const { label_type, order_option, order_type } = proxy.useDict(
-  "label_type",
-  "order_option",
-  "order_type"
-);
 const { logisticsList } = useWmsStore();
 
 const userStore = useUserStore();
-const mode = ref(false);
 const loading = ref(false);
 const selectItemSkuVoCheck = ref([]);
 const initFormData = {
@@ -247,7 +232,7 @@ const getRowKey = (row) => {
 // 初始化receipt-order-form ref
 const orderForm = ref();
 const multipleTable = ref();
-const doSave = async (NoticeStatus = 0) => {
+const doSave = async (NoticeStatus) => {
   //验证receiptForm表单
   orderForm.value?.validate((valid) => {
     // 校验
@@ -284,13 +269,15 @@ const doSave = async (NoticeStatus = 0) => {
       updateShipmentNotice(params).then((res) => {
         if (res.code === 200) {
           ElMessage.success(res.msg);
-          NoticeStatus === 1 ? close("/order/draft") : proxy.$router.go(-1);
+          NoticeStatus === noticeStatusMap.cao_gao
+            ? close("/order/draft")
+            : proxy.$router.go(-1);
         } else {
           ElMessage.error(res.msg);
         }
       });
     } else {
-      if (NoticeStatus === 1) {
+      if (NoticeStatus === noticeStatusMap.cao_gao) {
         createDraftShipmentNotice(params).then((res) => {
           if (res.code === 200) {
             ElMessage.success(res.msg);
@@ -315,11 +302,11 @@ const doSave = async (NoticeStatus = 0) => {
 
 const saveAsDraft = async () => {
   await proxy?.$modal.confirm("确认保存为草稿吗？");
-  doSave(1);
+  doSave(noticeStatusMap.cao_gao);
 };
 const AddShipmentNotice = async () => {
   await proxy?.$modal.confirm("确认发布吗？");
-  doSave(2);
+  doSave(noticeStatusMap.wei_fa_huo);
 };
 
 const route = useRoute();

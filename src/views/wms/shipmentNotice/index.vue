@@ -25,8 +25,8 @@
       <el-tab-pane name="" label="全部" />
       <el-tab-pane
         :name="item.value"
-        v-for="item in shipping_notice_status.filter(
-          (item) => item.value !== '1'
+        v-for="item in shipping_notice_status?.filter(
+          (item) => item.value !== noticeStatusMap.cao_gao
         )"
         :key="item.value"
         :label="item.label"
@@ -73,7 +73,7 @@
       >
         <template #default="{ row }">
           {{
-            logisticsList.find((item) => item.id === row.deliveryMethod)?.name
+            logisticsList?.find((item) => item.id === row.deliveryMethod)?.name
           }}
         </template>
       </el-table-column>
@@ -90,8 +90,8 @@
       >
         <template #default="scope">
           {{
-            userOptions.find(
-              (item) => item.value === parseInt(scope.row.userId)
+            userOptions?.find(
+              (item) => item.value.toString() === scope.row.userId
             )?.label
           }}
         </template>
@@ -120,7 +120,12 @@
             type="primary"
             @click="handleAdd(scope.row)"
             v-hasPermi="['wms:shipment:add']"
-            v-if="['1', '2'].includes(scope.row.status)"
+            v-if="
+              [
+                noticeStatusMap.wei_fa_huo,
+                noticeStatusMap.bu_fen_fa_huo,
+              ].includes(scope.row.status)
+            "
             >创建发货单</el-button
           >
           <el-button
@@ -128,7 +133,7 @@
             type="primary"
             @click="handleDelete(scope.row)"
             v-hasPermi="['wms:shipmentNotice:remove']"
-            v-if="scope.row.status === '1'"
+            v-if="scope.row.status === noticeStatusMap.cao_gao"
             >删除</el-button
           >
           <el-button
@@ -136,7 +141,11 @@
             type="primary"
             @click="handleChangeStatus(scope.row)"
             v-hasPermi="['wms:shipmentNotice:edit']"
-            v-if="!['1', '5'].includes(scope.row.status)"
+            v-if="
+              ![noticeStatusMap.cao_gao, noticeStatusMap.yi_guan_bi].includes(
+                scope.row.status
+              )
+            "
             >关闭</el-button
           >
         </template>
@@ -165,17 +174,14 @@ import {
 } from "@/api/wms/shipmentNotice";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
+import mapData from "../../../utils/mapData";
 
+const { shipping_notice_status, noticeStatusMap } = mapData;
 const { proxy } = getCurrentInstance();
 
 const { userOptions } = useWmsStore();
 const userStore = useUserStore();
-const { order_option, shipping_notice_status } = proxy.useDict(
-  "order_status",
-  "order_type",
-  "order_option",
-  "shipping_notice_status"
-);
+
 const isBuyer = computed(() => {
   return userStore.roles[0] === "buyer";
 });
@@ -239,7 +245,7 @@ const handleChangeStatus = (row) => {
     .then(() => {
       const data = {
         id: row.id,
-        status: "5",
+        status: noticeStatusMap.yi_guan_bi,
         userId: row.userId,
         orderId: row.orderId,
         tag: row.tag,
