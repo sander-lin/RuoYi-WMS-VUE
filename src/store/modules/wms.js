@@ -6,7 +6,8 @@ import {
   treeSelectItemCategory,
 } from "@/api/wms/itemCategory";
 import { listItemBrand } from "@/api/wms/itemBrand";
-import { listLogistics } from "@/api/wms/logistics";
+import { listChannel } from "@/api/wms/channel";
+import { listUser } from "@/api/system/user";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
@@ -116,21 +117,50 @@ export const useWmsStore = defineStore("wms", () => {
 
   const getLogisticsList = () => {
     return new Promise((resolve, reject) => {
-      listLogistics({})
+      listChannel({})
         .then((res) => {
-          logisticsList.value = res.data;
+          logisticsList.value = res.rows;
           const map = new Map();
           logisticsList.value.forEach((supplier) => {
             map.set(supplier.id, { ...supplier });
           });
           logisticsMap.value = map;
-          console.info("logisticsMap:", logisticsMap.value);
           resolve();
         })
         .catch(() => reject());
     });
   };
 
+  // 人员管理
+  const userList = ref([]);
+  const userOptions = ref([]); // 人员下拉列表
+  const userMap = ref(new Map());
+
+  const getUserList = () => {
+    return new Promise((resolve, reject) => {
+      listUser({})
+        .then((res) => {
+          userList.value = res.rows;
+          const map = new Map();
+          userList.value.forEach((supplier) => {
+            map.set(supplier.id, { ...supplier });
+          });
+          userOptions.value = userList.value.filter((item) => {
+            return item.userId !== 1;
+          }).map((item) => {
+            return {
+              label: item.userName,
+              value: item.userId,
+            };
+          });
+          userMap.value = map;
+          resolve();
+        })
+        .catch(() => reject());
+    });
+  };
+  // getUserList();
+  // getLogisticsList();
   return {
     // 仓库管理
     warehouseList,
@@ -158,5 +188,9 @@ export const useWmsStore = defineStore("wms", () => {
     logisticsList,
     logisticsMap,
     getLogisticsList,
+    getUserList,
+    userOptions,
+    userMap,
+    userList,
   };
 });

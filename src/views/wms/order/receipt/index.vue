@@ -22,7 +22,7 @@
             </el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="入库类型" prop="receiptOrderStatus">
+        <!-- <el-form-item label="入库类型" prop="receiptOrderStatus">
           <el-radio-group
             v-model="queryParams.receiptOrderType"
             @change="handleQuery"
@@ -36,7 +36,7 @@
               {{ item.label }}
             </el-radio-button>
           </el-radio-group>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="入库单号" prop="receiptOrderNo">
           <el-input
             v-model="queryParams.receiptOrderNo"
@@ -146,14 +146,14 @@
             <div v-if="row.orderNo">订单号：{{ row.orderNo }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="入库类型" align="left" prop="receiptOrderType">
+        <!-- <el-table-column label="入库类型" align="left" prop="receiptOrderType">
           <template #default="{ row }">
             <dict-tag
               :options="wms_receipt_type"
               :value="row.receiptOrderType"
             />
           </template>
-        </el-table-column>
+        </el-table-column> -->
         <el-table-column label="供应商" align="left" prop="merchantId">
           <template #default="{ row }">
             <div>
@@ -424,7 +424,10 @@ function handleDelete(row) {
 }
 
 function handleUpdate(row) {
-  proxy.$router.push({ path: "/inventory/receiptOrderEdit", query: { id: row.id } });
+  proxy.$router.push({
+    path: "/inventory/receiptOrderEdit",
+    query: { id: row.id },
+  });
 }
 
 function handleGoDetail(row) {
