@@ -9,6 +9,16 @@ export function listMerchandise(query) {
   })
 }
 
+
+// 查询商品管理详细
+export function listUnconfirmedMerchandise(query) {
+  return request({
+    url: '/wms/merchandise/listWithNotConfirmed',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询商品管理详细
 export function getMerchandise(id) {
   return request({
@@ -32,6 +42,14 @@ export function updateMerchandise(data) {
     url: '/wms/merchandise',
     method: 'put',
     data: data
+  })
+}
+
+// 确认商品
+export function confirmMerchandise(id) {
+  return request({
+    url: `/wms/merchandise/confirm/${id}`,
+    method: 'put',
   })
 }
 

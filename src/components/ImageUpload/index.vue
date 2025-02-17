@@ -101,7 +101,6 @@ watch(
         // });
         list = val.split(",");
       }
-      console.log("list", list);
       // 然后将数组转为对象数组
       fileList.value = list.map((item) => {
         // 字符串回显处理 如果此处存的是url可直接回显 如果存的是id需要调用接口查出来

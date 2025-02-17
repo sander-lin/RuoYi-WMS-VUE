@@ -528,7 +528,6 @@ const doMovement = async () => {
       };
     });
 
-    //console.log('提交前校验',form.value)
     const params = {
       id: form.value.id,
       movementOrderNo: form.value.movementOrderNo,
@@ -625,8 +624,6 @@ const handleChangeTargetWarehouse = (e) => {
 };
 
 const handleChangeTargetArea = (e) => {
-  console.log("targetAreaId", e);
-  console.log("form.value.targetAreaId", form.value.targetAreaId);
   form.value.details.forEach((it) => (it.targetAreaId = e));
 };
 

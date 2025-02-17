@@ -326,7 +326,6 @@ function getList() {
 }
 
 function handleViewDetail(orderId) {
-  console.log("orderId", orderId);
   proxy.$router.push({ path: "/order/orderDetail", query: { id: orderId } });
 }
 
