@@ -31,7 +31,7 @@
             @keyup.enter="handleQuery"
           />
         </el-form-item>
-        <el-form-item label="所属客户" prop="userId">
+        <el-form-item label="所属客户" prop="userId" v-if="isAdmin">
           <el-select
             v-model="queryParams.userId"
             placeholder="请选择所属客户"
@@ -68,17 +68,26 @@
             v-hasPermi="['wms:merchandise:add']"
             >新增</el-button
           >
-          <el-button
+          <!-- <el-button
             type="warning"
             plain
             icon="Download"
             @click="handleExport"
             v-hasPermi="['wms:merchandise:export']"
             >导出</el-button
-          >
+          > -->
         </el-col>
       </el-row>
 
+      <el-tabs v-model="activeName" type="card" @tab-click="handleClick">
+        <el-tab-pane
+          v-for="e in tabOption"
+          :key="e.name"
+          :label="e.label"
+          :name="e.name"
+        >
+        </el-tab-pane>
+      </el-tabs>
       <el-table v-loading="loading" :data="merchandiseList" border class="mt20">
         <el-table-column label="商品编号" prop="id" v-if="true" />
         <el-table-column label="FNSKU" prop="fnsku" />
@@ -110,11 +119,30 @@
           <template #default="scope">
             <el-button
               link
+              v-if="isAdmin && activeName === 'unconfirmed'"
+              icon="Check"
+              :loading="buttonLoading"
+              type="primary"
+              @click="handleConfirm(scope.row)"
+              >确认</el-button
+            >
+            <!-- 商品确认后不应该可以修改 -->
+            <el-button
+              v-if="activeName === 'unconfirmed'"
+              link
               type="primary"
               icon="Edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['wms:merchandise:edit']"
               >修改</el-button
+            >
+            <el-button
+              v-if="activeName === 'confirmed'"
+              link
+              type="primary"
+              icon="Memo"
+              @click="handleDetail(scope.row)"
+              >详情</el-button
             >
             <el-button
               link
@@ -127,7 +155,6 @@
           </template>
         </el-table-column>
       </el-table>
-
       <el-row>
         <pagination
           v-show="total > 0"
@@ -145,6 +172,7 @@
         :model="form"
         :rules="rules"
         label-width="80px"
+        :disabled="formDisable"
       >
         <el-form-item label="FNSKU" prop="fnsku">
           <el-input v-model="form.fnsku" placeholder="请输入FNSKU" />
@@ -167,10 +195,23 @@
         <el-form-item label="图片" prop="image">
           <image-upload v-model="form.image" />
         </el-form-item>
+        <el-form-item label="文件" prop="fileIds">
+          <div>
+            <file-upload v-model="form.fileIds" />
+            <ul class="list-group list-group-striped">
+              <li v-for="file in form.files" :key="file.name">
+                <div>
+                  <span>下载 </span> <el-icon><Document></Document></el-icon>
+                  <a class="link-type" :href="file.url"> {{ file.name }} </a>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </el-form-item>
         <el-form-item label="单价" prop="price">
           <el-input-number v-model="form.price" placeholder="请输入单价" />
         </el-form-item>
-        <el-form-item label="所属客户" prop="userId">
+        <el-form-item label="所属客户" prop="userId" v-if="isAdmin">
           <el-select
             v-model="form.userId"
             placeholder="请选择所属客户"
@@ -187,8 +228,12 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button :loading="buttonLoading" type="primary" @click="submitForm"
-            >确 定</el-button
+          <el-button
+            v-if="!formDisable"
+            :loading="buttonLoading"
+            type="primary"
+            @click="submitForm"
+            >{{ isAdmin ? "确 定" : "提交审核" }}</el-button
           >
           <el-button @click="cancel">取 消</el-button>
         </div>
@@ -204,8 +249,11 @@ import {
   delMerchandise,
   addMerchandise,
   updateMerchandise,
+  confirmMerchandise,
+  listUnconfirmedMerchandise,
 } from "@/api/wms/merchandise";
 import { useWmsStore } from "@/store/modules/wms";
+import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
 
@@ -216,11 +264,37 @@ const loading = ref(true);
 const ids = ref([]);
 const total = ref(0);
 const title = ref("");
+const isAdd = ref(false);
+const activeName = ref("confirmed");
+const tabOption = [
+  { label: "已确认", name: "confirmed" },
+  { label: "待确认", name: "unconfirmed" },
+];
 
 const { userOptions, getUserList } = useWmsStore();
 
+const isAdmin = computed(
+  () =>
+    useUserStore().roles.includes("admin1") ||
+    useUserStore().roles.includes("admin")
+);
+const formDisable = computed(
+  () => activeName.value === "confirmed" && !isAdd.value
+);
+
 const data = reactive({
-  form: {},
+  form: {
+    fnsku: undefined,
+    asin: undefined,
+    name: undefined,
+    size: undefined,
+    color: undefined,
+    type: undefined,
+    image: undefined,
+    userId: undefined,
+    price: undefined,
+    fileIds: undefined,
+  },
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -252,8 +326,14 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
+function handleClick(tab) {
+  setTimeout(() => {
+    getList();
+  }, 0);
+}
+
 /** 查询商品管理列表 */
-function getList() {
+function getConfirmedList() {
   loading.value = true;
   listMerchandise(queryParams.value).then((response) => {
     merchandiseList.value = response.rows;
@@ -262,8 +342,18 @@ function getList() {
   });
 }
 
+function getUnconfrimedList() {
+  loading.value = true;
+  listUnconfirmedMerchandise(queryParams.value).then((response) => {
+    merchandiseList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
+}
+
 // 取消按钮
 function cancel() {
+  isAdd.value = false;
   open.value = false;
   reset();
 }
@@ -302,11 +392,23 @@ function resetQuery() {
 /** 新增按钮操作 */
 function handleAdd() {
   reset();
+  isAdd.value = true;
   open.value = true;
   title.value = "添加商品管理";
 }
 
 /** 修改按钮操作 */
+function handleDetail(row) {
+  reset();
+  const _id = row.id || ids.value;
+  getMerchandise(_id).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = "商品信息详情";
+  });
+}
+
+/** 详情按钮操作 */
 function handleUpdate(row) {
   reset();
   const _id = row.id || ids.value;
@@ -314,12 +416,28 @@ function handleUpdate(row) {
     form.value = response.data;
 
     open.value = true;
-    title.value = "修改商品信息";
+    title.value = "修改商品信息详情";
   });
 }
 
+function getList() {
+  if (activeName.value === "confirmed") {
+    getConfirmedList();
+  } else {
+    getUnconfrimedList();
+  }
+}
+function handleConfirm(row) {
+  confirmMerchandise(row.id).then((response) => {
+    getList();
+  });
+}
 /** 提交按钮 */
 function submitForm() {
+  if (!isAdmin.value && form.value.id == null) {
+    form.value.userId = useUserStore().id + "";
+  }
+
   proxy.$refs["merchandiseRef"].validate((valid) => {
     if (valid) {
       buttonLoading.value = true;
@@ -327,7 +445,7 @@ function submitForm() {
         updateMerchandise(form.value)
           .then((response) => {
             proxy.$modal.msgSuccess("修改成功");
-            open.value = false;
+            cancel();
             getList();
           })
           .finally(() => {
@@ -337,7 +455,7 @@ function submitForm() {
         addMerchandise(form.value)
           .then((response) => {
             proxy.$modal.msgSuccess("新增成功");
-            open.value = false;
+            cancel();
             getList();
           })
           .finally(() => {
@@ -369,16 +487,15 @@ function handleDelete(row) {
 }
 
 /** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    "wms/merchandise/export",
-    {
-      ...queryParams.value,
-    },
-    `merchandise_${new Date().getTime()}.xlsx`
-  );
-}
+// function handleExport() {
+//   proxy.download(
+//     "wms/merchandise/export",
+//     {
+//       ...queryParams.value,
+//     },
+//     `merchandise_${new Date().getTime()}.xlsx`
+//   );
+// }
 
 getList();
-// getUserList();
 </script>
