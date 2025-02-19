@@ -13,7 +13,7 @@ import directive from './directive' // directive
 
 // 注册指令
 import plugins from './plugins' // plugins
-import { download } from '@/utils/request'
+import { download, downloadByJson } from '@/utils/request'
 
 // svg图标
 import 'virtual:svg-icons-register'
@@ -25,6 +25,7 @@ import './permission' // permission control
 import { useDict } from '@/utils/dict'
 import { getConfigKey, updateConfigByKey } from "@/api/system/config";
 import { parseTime, resetForm, addDateRange, handleTree, selectDictLabel, selectDictLabels } from '@/utils/ruoyi'
+import { isBuyer } from '@/utils/role'
 
 // 分页组件
 import Pagination from '@/components/Pagination'
@@ -52,12 +53,14 @@ app.config.globalProperties.useDict = useDict
 app.config.globalProperties.getConfigKey = getConfigKey
 app.config.globalProperties.updateConfigByKey = updateConfigByKey
 app.config.globalProperties.download = download
+app.config.globalProperties.downloadByJson = downloadByJson
 app.config.globalProperties.parseTime = parseTime
 app.config.globalProperties.resetForm = resetForm
 app.config.globalProperties.handleTree = handleTree
 app.config.globalProperties.addDateRange = addDateRange
 app.config.globalProperties.selectDictLabel = selectDictLabel
 app.config.globalProperties.selectDictLabels = selectDictLabels
+app.config.globalProperties.isBuyer = isBuyer
 
 // 全局组件挂载
 app.component('DictTag', DictTag)

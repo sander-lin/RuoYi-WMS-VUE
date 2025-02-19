@@ -20,7 +20,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="所属客户" prop="userId" v-if="!isBuyer">
+      <el-form-item label="所属客户" prop="userId" v-if="!isBuyer()">
         <el-select
           v-model="queryParams.userId"
           placeholder="请选择所属客户"
@@ -50,7 +50,17 @@
           >创建订单</el-button
         >
       </el-form-item>
+      <el-form-item>
+        <el-button
+          type="warning"
+          plain
+          icon="Download"
+          @click="handleExport"
+          v-hasPermi="['wms:order:export']"
+        >导出</el-button>
+      </el-form-item>
     </el-form>
+    
     <el-tabs v-model="queryParams.status" @tab-click="handleQuery" type="card">
       <el-tab-pane name="" label="全部" />
       <el-tab-pane
@@ -62,7 +72,15 @@
         :label="item.label"
       />
     </el-tabs>
-    <el-table v-loading="loading" :data="orderList" border>
+    <el-table 
+      v-loading="loading" 
+      :data="orderList" 
+      stripe
+      border
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" />
+      <el-table-column type="index" width="50" />
       <el-table-column label="订单编号" prop="id" v-if="true" align="center" />
       <el-table-column
         prop="merchandises"
@@ -114,6 +132,7 @@
       >
         <template #default="scope">
           <el-select
+            :disabled="isBuyer()"
             v-model="scope.row.status"
             @change="handleChangeStatus(scope.row)"
           >
@@ -133,7 +152,7 @@
         label="所属客户"
         prop="userId"
         align="center"
-        v-if="!isBuyer"
+        v-if="!isBuyer()"
       >
         <template #default="{ row }">
           {{
@@ -214,9 +233,7 @@ const userStore = useUserStore();
 const { userOptions } = useWmsStore();
 
 const { order_status, order_type, orderStatusMap } = mapData;
-const isBuyer = computed(() => {
-  return userStore.roles[0] === "buyer";
-});
+const multipleSelection = ref([]);
 const orderList = ref([]);
 const loading = ref(true);
 const ids = ref([]);
@@ -306,6 +323,11 @@ function resetQuery() {
   handleQuery();
 }
 
+const handleSelectionChange = (val) => {
+  console.log(val)
+  multipleSelection.value = val
+}
+
 /** 新增按钮操作 */
 function handleAdd() {
   proxy.$router.push({ path: "/order/orderEdit" });
@@ -335,7 +357,7 @@ const handleAddShipmentNotice = (row) => {
 function handleDelete(row) {
   const _ids = row.id || ids.value;
   proxy.$modal
-    .confirm("确认删除后订单付款将退还至原账户，是否继续？")
+    .confirm("正在删除订单，是否继续？")
     .then(function () {
       loading.value = true;
       return delOrder(_ids);
@@ -354,11 +376,14 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download(
+  
+  if(multipleSelection.value.length === 0){
+    proxy.$modal.msgError("请勾选要导出的订单");
+    return
+  }
+  proxy.downloadByJson(
     "wms/order/export",
-    {
-      ...queryParams.value,
-    },
+    multipleSelection.value.map(e=> e.id),
     `order_${new Date().getTime()}.xlsx`
   );
 }

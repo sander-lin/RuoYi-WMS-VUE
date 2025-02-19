@@ -191,7 +191,6 @@ const initFormData = {
   userId: undefined,
   type: "",
   remark: undefined,
-  status: "",
   totalAmount: "",
   merchandises: [],
 };
@@ -282,7 +281,6 @@ const doSave = async (OrderStatus) => {
       userId: userStore.id,
       type: form.value.type,
       remark: form.value.remark,
-      status: OrderStatus,
       totalAmount: totalPrice.value,
       merchandises: merchandises,
     };
@@ -327,13 +325,13 @@ const saveAsDraft = async () => {
   doSave(orderStatusMap.cao_gao);
 };
 const AddOrder = async () => {
-  if (totalPrice.value > userStore.balance) {
-    await proxy?.$modal.confirm("余额不足, 是否先保存为草稿？");
-    doSave(orderStatusMap.cao_gao);
-  } else {
+  // if (totalPrice.value > userStore.balance) {
+  //   await proxy?.$modal.confirm("余额不足, 是否先保存为草稿？");
+  //   doSave(orderStatusMap.cao_gao);
+  // } else {
     await proxy?.$modal.confirm("确认发布吗？");
     doSave(orderStatusMap.mai_fu_zhong);
-  }
+  // }
 };
 
 const route = useRoute();
