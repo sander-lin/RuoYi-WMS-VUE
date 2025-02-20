@@ -17,10 +17,10 @@
       v-if="settingsStore.topNav"
     />
 
-    <div class="balance-container" v-if="userStore.roles[0] === 'buyer'">
+    <!-- <div class="balance-container" v-if="userStore.roles[0] === 'buyer'">
       <span class="balance-label">余额：</span>
       <span class="balance-amount">¥ {{ userStore.balance }}</span>
-    </div>
+    </div> -->
     <div class="right-menu">
       <div class="avatar-container">
         <el-dropdown
@@ -34,6 +34,9 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
+              <el-dropdown-item divided >
+                <span class="font-bold">{{userStore.name}}</span>
+              </el-dropdown-item>
               <router-link to="/user/profile">
                 <el-dropdown-item>个人中心</el-dropdown-item>
               </router-link>
@@ -104,6 +107,10 @@ function setLayout() {
 </script>
 
 <style lang="scss" scoped>
+
+.font-bold {
+  font-weight: bold;
+}
 .navbar {
   height: 50px;
   overflow: hidden;

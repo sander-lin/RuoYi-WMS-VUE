@@ -69,7 +69,7 @@
       <el-table-column label="颜色" prop="color" />
       <el-table-column label="型号" prop="type" />
       <el-table-column label="单价" prop="price" />
-      <el-table-column label="所属用户" prop="userId">
+      <el-table-column label="所属用户" prop="userId" v-if="!isBuyer()">
         <template #default="scope">
           {{
             userOptions.find(

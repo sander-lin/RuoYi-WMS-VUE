@@ -73,6 +73,13 @@
                   </el-select>
                 </template>
               </el-table-column>
+              <el-table-column label="库存数量" prop="inventoryQuantity" align="center">
+                <template #default="{ row }">
+                  <div>
+                    {{ row.inventoryQuantity }}
+                </div>
+                </template>
+              </el-table-column>
               <el-table-column label="数量" prop="quantityRequired" width="200">
                 <template #default="{ row }">
                   <el-input-number
@@ -191,7 +198,6 @@ const initFormData = {
   userId: undefined,
   type: "",
   remark: undefined,
-  status: "",
   totalAmount: "",
   merchandises: [],
 };
@@ -282,7 +288,6 @@ const doSave = async (OrderStatus) => {
       userId: userStore.id,
       type: form.value.type,
       remark: form.value.remark,
-      status: OrderStatus,
       totalAmount: totalPrice.value,
       merchandises: merchandises,
     };
@@ -327,13 +332,13 @@ const saveAsDraft = async () => {
   doSave(orderStatusMap.cao_gao);
 };
 const AddOrder = async () => {
-  if (totalPrice.value > userStore.balance) {
-    await proxy?.$modal.confirm("余额不足, 是否先保存为草稿？");
-    doSave(orderStatusMap.cao_gao);
-  } else {
+  // if (totalPrice.value > userStore.balance) {
+  //   await proxy?.$modal.confirm("余额不足, 是否先保存为草稿？");
+  //   doSave(orderStatusMap.cao_gao);
+  // } else {
     await proxy?.$modal.confirm("确认发布吗？");
     doSave(orderStatusMap.mai_fu_zhong);
-  }
+  // }
 };
 
 const route = useRoute();
