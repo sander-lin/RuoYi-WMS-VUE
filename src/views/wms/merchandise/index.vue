@@ -88,7 +88,7 @@
         >
         </el-tab-pane>
       </el-tabs>
-      <el-table v-loading="loading" :data="merchandiseList" border class="mt20">
+      <el-table v-loading="loading" :data="merchandiseList" border stripe class="mt20">
         <el-table-column label="商品编号" prop="id" v-if="true" />
         <el-table-column label="FNSKU" prop="fnsku" />
         <el-table-column label="ASIN" prop="asin" />
