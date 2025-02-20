@@ -77,6 +77,12 @@
                 align="center"
               />
               <el-table-column
+                label="库存数量"
+                prop="inventoryQuantity"
+                width="120"
+                align="center"
+              />
+              <el-table-column
                 label="总已发数量"
                 prop="totalQuantityShipped"
                 width="120"
