@@ -62,7 +62,7 @@
         :label="item.label"
       />
     </el-tabs>
-    <el-table v-loading="loading" :data="orderList" border>
+    <el-table v-loading="loading" :data="orderList" stripe border>
       <el-table-column label="订单编号" prop="id" v-if="true" align="center" />
       <el-table-column
         prop="merchandises"
