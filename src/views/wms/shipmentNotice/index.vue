@@ -52,6 +52,7 @@
               :preview-src-list="[item.image]"
               fit="cover"
               class="goods-image"
+              preview-teleported
             />
             <div class="goods-info-content">
               <span>{{ `商品名称：${item.name}` }}</span>

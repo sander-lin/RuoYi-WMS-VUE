@@ -99,6 +99,7 @@
               :preview-src-list="[item.image]"
               fit="cover"
               class="goods-image"
+              preview-teleported
             />
             <div class="goods-info-content">
               <span>{{ `商品名称：${item.name}` }}</span>
@@ -397,7 +398,7 @@ getList();
     display: flex;
     align-items: center;
     padding: 5px;
-    justify-content: space-between;
+    justify-content: space-around;
     &:not(:last-child) {
       border-bottom: 1px solid #eaeaea;
     }

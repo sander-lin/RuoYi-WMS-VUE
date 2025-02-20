@@ -73,6 +73,13 @@
                   </el-select>
                 </template>
               </el-table-column>
+              <el-table-column label="库存数量" prop="inventoryQuantity" align="center">
+                <template #default="{ row }">
+                  <div>
+                    {{ row.inventoryQuantity }}
+                </div>
+                </template>
+              </el-table-column>
               <el-table-column label="数量" prop="quantityRequired" width="200">
                 <template #default="{ row }">
                   <el-input-number
