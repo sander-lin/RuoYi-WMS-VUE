@@ -107,6 +107,37 @@
           </el-table>
         </div>
       </el-card>
+      <el-card header="物流详情" class="mt10">
+        <el-button
+          type="primary"
+          plain
+          class="pull-right"
+          @click="showAddLogistics"
+        >
+          新增物流信息
+        </el-button>
+        <el-timeline class="time-line">
+          <el-timeline-item
+            v-for="(activity, index) in activities"
+            :key="index"
+            :timestamp="new Date(activity.logisticsDate).toLocaleString()"
+            @mouseenter="() => editLogisticsId = activity.id"
+            @mouseleave="editLogisticsId = ''"
+          >
+            <div v-show="editLogisticsId !== activity.id">
+            {{ activity.logisticsInfo }}
+          </div>
+          <div v-show="editLogisticsId === activity.id">
+            <el-button link type="primary" @click="handleChangeLogistics(activity)">
+              修改
+            </el-button>
+            <el-button link type="primary" @click="handleDeleteLogistics(activity)">
+              删除
+            </el-button>
+          </div>
+          </el-timeline-item>
+        </el-timeline>
+      </el-card>
     </div>
     <div class="footer-global">
       <div class="btn-box">
@@ -121,11 +152,45 @@
           <el-button @click="save()" type="primary" v-if="editAble"
             >保存</el-button
           > -->
-          <el-button @click="close()" class="mr10">返回</el-button>
+          <el-button @click="close()" type="primary" class="mr10"
+            >返回</el-button
+          >
         </div>
       </div>
     </div>
   </div>
+  <el-dialog
+    v-model="logisticVisible"
+    :title="logisticsTitle"
+    align-center
+    width="500"
+  >
+    <el-form
+      ref="logisticsFormRef"
+      style="max-width: 600px"
+      :model="logisticsForm"
+      :rules="rules"
+    >
+      <el-form-item label="物流信息" prop="logisticsInfo">
+        <el-input v-model="logisticsForm.logisticsInfo" type="textarea" />
+      </el-form-item>
+      <el-form-item label="物流时间" prop="logisticsDate">
+        <el-date-picker
+          v-model="logisticsForm.logisticsDate"
+          type="datetime"
+          placeholder="选择时间"
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button type="primary" @click="submitForm(logisticsFormRef)">
+          确定
+        </el-button>
+        <el-button @click="resetForm(logisticsFormRef)">取消</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup name="ShipmentEdit">
@@ -138,6 +203,12 @@ import {
   toRefs,
 } from "vue";
 import { getShipment, updateShipment } from "@/api/wms/shipment";
+import {
+  listLogistics,
+  addLogistics,
+  updateLogistics,
+  delLogistics,
+} from "@/api/wms/logistics";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
@@ -149,6 +220,10 @@ const { label_type, order_option, shipping_status, noticeStatusMap } = mapData;
 const { logisticsList } = useWmsStore();
 const userStore = useUserStore();
 const isBuyer = userStore.roles.includes("buyer");
+const editLogisticsId = ref('')
+const logisticsTitle = ref('增加最新物流信息')
+const isAddLogistics = ref(true)
+
 const editAble = computed(() => {
   return !isBuyer && form.value.status !== noticeStatusMap.yi_wan_cheng;
 });
@@ -165,6 +240,131 @@ const initFormData = {
   totalAmount: "",
   merchandises: [],
 };
+const logisticVisible = ref(false);
+const activities = ref([]);
+
+const logisticsFormRef = ref();
+const logisticsForm = reactive({
+  id: undefined,
+  logisticsInfo: undefined,
+  logisticsDate: undefined,
+});
+
+const rules = reactive({
+  logisticsInfo: [
+    { required: true, message: "请输入物流信息", trigger: "blur" },
+  ],
+  logisticsDate: [
+    { required: true, message: "请输入物流日期", trigger: "blur" },
+  ],
+});
+
+const getLogistics = (id) => {
+  listLogistics(id).then((response) => {
+    activities.value = response.rows;
+  });
+};
+
+const submitForm = async (formEl) => {
+  if (!formEl) {
+    logisticVisible.value = false;
+    return;
+  }
+  await formEl.validate((valid, fields) => {
+    if (valid) {
+      if(isAddLogistics.value) {
+        addLogistics({
+        shipmentId: route.query.id,
+        logisticsInfo: logisticsForm.logisticsInfo,
+        logisticsDate: logisticsForm.logisticsDate,
+      }).then((response) => {
+        if (response.code === 200) {
+          ElMessage({
+            type: "success",
+            message: "添加成功",
+          });
+          activities.value.push({
+            logisticsInfo: logisticsForm.logisticsInfo,
+            logisticsDate: logisticsForm.logisticsDate,
+          });
+        }
+      }).finally(() => {
+        logisticVisible.value = false;
+      });
+      }
+      else {
+        updateLogistics({
+          id: logisticsForm.id,
+          logisticsInfo: logisticsForm.logisticsInfo,
+          logisticsDate: logisticsForm.logisticsDate,
+        }).then((response) => {
+          if (response.code === 200) {
+            ElMessage({
+              type: "success",
+              message: "修改成功",
+            });
+            activities.value = activities.value.map((item) => {
+              if (item.id === logisticsForm.id) {
+                return {
+                  id: logisticsForm.id,
+                  logisticsInfo: logisticsForm.logisticsInfo,
+                  logisticsDate: logisticsForm.logisticsDate,
+                };
+              }
+              return item;
+            });
+          }
+        }).finally(() => {
+          logisticVisible.value = false;
+        });
+      }
+    }
+  });
+};
+
+const resetForm = (formEl) => {
+  if (!formEl) {
+    logisticVisible.value = false;
+    return;
+  }
+  formEl.resetFields();
+  logisticVisible.value = false;
+};
+
+const showAddLogistics = () => {
+  logisticVisible.value = true;
+  isAddLogistics.value = true;
+  logisticsTitle.value = "新增物流信息"
+  nextTick(() => {
+    logisticsFormRef.value.resetFields();
+  });
+};
+
+const handleChangeLogistics = (logistics) => {
+  isAddLogistics.value = false
+  logisticVisible.value = true;
+  logisticsTitle.value = "修改物流信息"
+
+  nextTick(()=>{
+    logisticsFormRef.value.resetFields();
+    logisticsForm.id = logistics.id;
+    logisticsForm.logisticsInfo = logistics.logisticsInfo;
+    logisticsForm.logisticsDate = logistics.logisticsDate;
+  })
+}
+
+const handleDeleteLogistics = (logistics) => {
+  delLogistics([logistics.id]).then((response) => {
+    if (response.code === 200) {
+      ElMessage({
+        type: "success",
+        message: "删除成功",
+      });
+      activities.value = activities.value.filter((item) => item.id !== logistics.id);
+    }
+  });
+}
+
 const data = reactive({
   form: { ...initFormData },
 });
@@ -214,12 +414,14 @@ function handleViewDetail(row) {
   proxy.$router.push({ path: "/shipment/detail", query: { id: row.id } });
 }
 
+
 const orderForm = ref();
 
 const route = useRoute();
 onMounted(() => {
   const id = route.query && route.query.id;
   loadDetail(id);
+  getLogistics(id)
 });
 
 // 获取发货通知单详情
@@ -274,5 +476,9 @@ const loadDetail = (id) => {
       margin: 0 20px;
     }
   }
+}
+.time-line {
+  padding-top: 32px;
+  padding-bottom: 32px;
 }
 </style>
