@@ -25,7 +25,23 @@
               >
             </div>
             <el-table :data="form.inventories" border empty-text="暂无商品明细">
-              <el-table-column label="商品信息" prop="itemSku.name" width="250">
+              <el-table-column
+                label="商品id"
+                prop="itemSku.id"
+                width="200"
+                align="center"
+              />
+              <el-table-column label="图片" width="180" align="center">
+                <template #default="{ row }">
+                  <el-image
+                    style="width: 80px; height: 80px"
+                    :src="row.itemSku.image"
+                    :preview-src-list="[row.itemSku.image]"
+                    preview-teleported
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="商品信息" width="250" align="center">
                 <template #default="{ row }">
                   <div>商品名称：{{ row.itemSku.name }}</div>
                   <div v-if="row.itemSku.type">
@@ -33,38 +49,77 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="规格信息" width="150">
+              <el-table-column label="规格信息" width="150" align="center">
                 <template #default="{ row }">
                   <div>颜色：{{ row.itemSku.color }}</div>
                   <div>尺寸：{{ row.itemSku.size }}</div>
                 </template>
               </el-table-column>
-              <el-table-column label="数量" prop="number" width="200">
+              <el-table-column label="所属客户" width="160" align="center">
                 <template #default="{ row }">
-                  <el-input-number
-                    v-model="row.number"
-                    placeholder="数量"
-                    :min="1"
-                    :precision="0"
-                    @change="handleChangeQuantity"
-                  ></el-input-number>
+                  <div>
+                    {{
+                      userOptions?.find(
+                        (item) => item.value.toString() === row.itemSku.userId
+                      )?.label
+                    }}
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="数量" prop="number" width="200">
+                <template #default="{ row, $index }">
+                  <el-form-item
+                    :prop="`inventories[${$index}].number`"
+                    :rules="rules.number"
+                    label-width="0"
+                  >
+                    <el-input-number
+                      v-model="row.number"
+                      placeholder="数量"
+                      :min="1"
+                      :precision="0"
+                      @change="handleChangeQuantity"
+                    ></el-input-number>
+                  </el-form-item>
                 </template>
               </el-table-column>
               <el-table-column label="单位" prop="unit" width="120">
-                <template #default="{ row }">
-                  <el-input v-model="row.unit" placeholder="请输入单位" />
+                <template #default="{ row, $index }">
+                  <el-form-item
+                    :prop="`inventories[${$index}].unit`"
+                    :rules="rules.unit"
+                    label-width="0"
+                  >
+                    <el-input v-model="row.unit" placeholder="请输入单位" />
+                  </el-form-item>
                 </template>
               </el-table-column>
-              <!-- <el-table-column label="备注" prop="remark">
-              <template #default="{ row }">
-                <el-input
-                  type="textarea"
-                  v-model="row.remark"
-                  placeholder="请输入备注"
-                  clearable
-                />
-              </template>
-            </el-table-column> -->
+
+              <el-table-column label="入库时间" width="250" prop="entryTime">
+                <template #default="{ row, $index }">
+                  <el-form-item
+                    :prop="`inventories[${$index}].entryTime`"
+                    :rules="rules.entryTime"
+                    label-width="0"
+                  >
+                  <el-date-picker
+                    v-model="row.entryTime"
+                    type="datetime"
+                    placeholder="请选择入库时间"
+                  />
+                  </el-form-item>
+                </template>
+              </el-table-column>
+              <el-table-column label="备注" width="250" prop="remark">
+                <template #default="{ row }">
+                  <el-input
+                    type="textarea"
+                    v-model="row.remark"
+                    placeholder="请输入备注"
+                    clearable
+                  />
+                </template>
+              </el-table-column>
 
               <el-table-column label="操作" align="center" fixed="right">
                 <template #default="scope">
@@ -88,19 +143,12 @@
         :model-value="skuSelectShow"
         @handleOkClick="handleOkClick"
         @handleCancelClick="skuSelectShow = false"
-        :size="'80%'"
+        size="80%"
+        :getListRequest="addableInventoryMerchandise"
       />
     </div>
     <div class="footer-global">
       <div class="btn-box">
-        <div>
-          <!-- <el-button @click="doWarehousing" type="primary" class="ml10"
-            >完成入库</el-button
-          >
-          <el-button @click="updateToInvalid" type="danger" v-if="form.id"
-            >作废</el-button
-          > -->
-        </div>
         <div>
           <el-button @click="doWarehousing" type="primary">完成入库</el-button>
           <el-button @click="cancel" class="mr10">取消</el-button>
@@ -111,79 +159,30 @@
 </template>
 
 <script setup name="ReceiptOrderEdit">
-import {
-  computed,
-  getCurrentInstance,
-  onMounted,
-  reactive,
-  ref,
-  toRef,
-  toRefs,
-  watch,
-} from "vue";
-import {
-  addReceiptOrder,
-  getReceiptOrder,
-  updateReceiptOrder,
-  warehousing,
-} from "@/api/wms/receiptOrder";
-import {
-  listInventories,
-  getInventories,
-  delInventories,
-  addInventories,
-  updateInventories,
-  batchAddInventories,
-} from "@/api/wms/Inventories";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { getCurrentInstance, reactive, ref, toRefs } from "vue";
+import { batchAddInventories, addableInventoryMerchandise } from "@/api/wms/inventories";
 import SkuSelect from "../../../components/SkuSelect.vue";
-import { useRoute } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
-import { numSub, generateNo } from "@/utils/ruoyi";
 import { delReceiptOrderDetail } from "@/api/wms/receiptOrderDetail";
 
 const { proxy } = getCurrentInstance();
-const { wms_receipt_type } = proxy.useDict("wms_receipt_type");
-const mode = ref(false);
 const loading = ref(false);
+const { userOptions } = useWmsStore();
+
 const initFormData = {
-  id: undefined,
-  receiptOrderNo: undefined,
-  receiptOrderType: "2",
-  merchantId: undefined,
-  orderNo: undefined,
-  payableAmount: undefined,
-  receiptOrderStatus: 0,
-  remark: undefined,
-  warehouseId: "1828364740028174337",
-  areaId: "1829397566185992193",
-  totalQuantity: 0,
   inventories: [],
 };
 const data = reactive({
   form: { ...initFormData },
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    receiptOrderNo: undefined,
-    receiptOrderType: undefined,
-    orderNo: undefined,
-    payableAmount: undefined,
-    receiptOrderStatus: undefined,
-  },
   rules: {
-    id: [{ required: true, message: "不能为空", trigger: "blur" }],
-    receiptOrderNo: [
-      { required: true, message: "入库单号不能为空", trigger: "blur" },
-    ],
-    // receiptOrderType: [
-    //   { required: true, message: "入库类型不能为空", trigger: "change" },
-    // ],
-    receiptOrderStatus: [
-      { required: true, message: "入库状态不能为空", trigger: "change" },
-    ],
-    warehouseId: [
-      { required: true, message: "请选择仓库", trigger: ["blur", "change"] },
+    number: [{ required: true, message: "入库数量不能为空", trigger: "blur" }],
+    unit: [{ required: true, message: "单位不能为空", trigger: "change" }],
+    entryTime: [
+      {
+        required: true,
+        message: "入库时间不能为空",
+        trigger: ["blur", "change"],
+      },
     ],
   },
 });
@@ -207,13 +206,16 @@ const showAddItem = () => {
 const handleOkClick = (item) => {
   skuSelectShow.value = false;
   item.forEach((it) => {
-    form.value.inventories.push({
-      itemSku: { ...it },
-      merchandiseId: it.id,
-      number: null,
-      unit: null,
-      remark: null,
-    });
+    const isExisted = form.value.inventories.some((item) => item.itemSku.id === it.id);
+    if (!isExisted) {
+      form.value.inventories.push({
+        itemSku: { ...it },
+        number: null,
+        unit: null,
+        remark: null,
+        entryTime: null,
+      });
+    }
   });
 };
 // 选择商品 end
@@ -221,153 +223,33 @@ const handleOkClick = (item) => {
 // 初始化receipt-order-form ref
 const receiptForm = ref();
 
-const save = async () => {
-  await proxy?.$modal.confirm("确认暂存入库单吗？");
-  doSave();
-};
-
-const doSave = async (receiptOrderStatus = 0) => {
-  //验证receiptForm表单
-  receiptForm.value?.validate((valid) => {
-    // 校验
-    if (!valid) {
-      return ElMessage.error("请填写必填项");
-    }
-    if (form.value.inventories?.length) {
-      const invalidQuantityList = form.value.inventories.filter(
-        (it) => !it.number
-      );
-      if (invalidQuantityList?.length) {
-        return ElMessage.error("请选择数量");
-      }
-    }
-    // 构建参数
-    const inventories = form.value.inventories.map((it) => {
-      return {
-        merchandiseId: it.merchandiseId,
-        number: it.number,
-        unit: it.unit,
-        remark: `入库${it.number}${it.unit}`,
-      };
-    });
-
-    // console.log("提交前校验", form.value);
-    const params = {
-      id: form.value.id,
-      receiptOrderNo: form.value.receiptOrderNo,
-      receiptOrderStatus,
-      receiptOrderType: form.value.receiptOrderType,
-      merchantId: form.value.merchantId,
-      orderNo: form.value.orderNo,
-      remark: form.value.remark,
-      payableAmount: form.value.payableAmount,
-      totalQuantity: form.value.totalQuantity,
-      warehouseId: form.value.warehouseId,
-      areaId: form.value.areaId,
-      inventories: inventories,
-    };
-    if (params.id) {
-      updateReceiptOrder(params).then((res) => {
-        if (res.code === 200) {
-          ElMessage.success(res.msg);
-          close();
-        } else {
-          ElMessage.error(res.msg);
-        }
-      });
-    } else {
-      addReceiptOrder(params).then((res) => {
-        if (res.code === 200) {
-          ElMessage.success(res.msg);
-          close();
-        } else {
-          ElMessage.error(res.msg);
-        }
-      });
-    }
-  });
-};
-
-const updateToInvalid = async () => {
-  await proxy?.$modal.confirm("确认作废入库单吗？");
-  doSave(-1);
-};
-
 const doWarehousing = async () => {
   await proxy?.$modal.confirm("确认入库吗？");
   receiptForm.value?.validate((valid) => {
     // 校验
-    if (!valid) {
-      return ElMessage.error("请填写必填项");
-    }
-    if (!form.value.inventories?.length) {
-      return ElMessage.error("请选择商品");
-    }
-    const invalidQuantityList = form.value.inventories.filter(
-      (it) => !it.number
-    );
-    if (invalidQuantityList?.length) {
-      return ElMessage.error("请选择数量");
-    }
+    if (!valid) return;
     // 构建参数
     const inventories = form.value.inventories.map((it) => {
       return {
-        merchandiseId: it.merchandiseId,
+        merchandiseId: it.itemSku.id,
         number: it.number,
         unit: it.unit,
-        remark: `入库${it.number}${it.unit}`,
+        remark: it.remark,
+        entryTime: it.entryTime,
       };
     });
 
-    //console.log('提交前校验',form.value)
     const params = {
       inventories: inventories,
     };
     batchAddInventories(params).then((res) => {
       if (res.code === 200) {
-        ElMessage.success("入库成功");
+        proxy.$modal.msgSuccess("入库成功");
         close();
       } else {
         ElMessage.error(res.msg);
       }
     });
-  });
-};
-
-const route = useRoute();
-onMounted(() => {
-  const id = route.query && route.query.id;
-  if (id) {
-    loadDetail(id);
-  } else {
-    form.value.receiptOrderNo = "RK" + generateNo();
-  }
-});
-
-// 获取入库单详情
-const loadDetail = (id) => {
-  loading.value = true;
-  getReceiptOrder(id)
-    .then((response) => {
-      form.value = { ...response.data };
-      Promise.resolve();
-    })
-    .then(() => {})
-    .finally(() => {
-      loading.value = false;
-    });
-};
-
-const handleChangeWarehouse = (e) => {
-  form.value.areaId = undefined;
-  form.value.inventories.forEach((it) => {
-    it.areaId = undefined;
-  });
-};
-
-const handleChangeArea = (e) => {
-  form.value.inventories.forEach((it) => {
-    it.areaId = e;
   });
 };
 
@@ -379,19 +261,6 @@ const handleChangeQuantity = () => {
     }
   });
   form.value.totalQuantity = sum;
-};
-
-const handleAutoCalc = () => {
-  let sum = undefined;
-  form.value.inventories.forEach((it) => {
-    if (it.amount >= 0) {
-      if (!sum) {
-        sum = 0;
-      }
-      sum = numSub(sum, -Number(it.amount));
-    }
-  });
-  form.value.payableAmount = sum;
 };
 
 const handleDeleteDetail = (row, index) => {
@@ -409,22 +278,18 @@ const handleDeleteDetail = (row, index) => {
     form.value.inventories.splice(index, 1);
   }
 };
-const goSaasTip = () => {
-  ElMessageBox.alert("一物一码/SN模式请去Saas版本体验！", "系统提示", {
-    confirmButtonText: "确定",
-  });
-  return false;
-};
 </script>
 
 <style lang="scss" scoped>
 @import "@/assets/styles/variables.module";
 
 .btn-box {
-  width: calc(100% - #{$base-sidebar-width});
   display: flex;
   align-items: center;
   justify-content: space-between;
   float: right;
+}
+:deep(.el-form-item--default) {
+  margin: 18px 0;
 }
 </style>

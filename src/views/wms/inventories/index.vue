@@ -50,21 +50,13 @@
             icon="Plus"
             @click="handleAdd"
             v-hasPermi="['wms:inventories:add']"
-            >批量入库</el-button
-          >
-          <el-button
-            type="warning"
-            plain
-            icon="Download"
-            @click="handleExport"
-            v-hasPermi="['wms:inventories:export']"
-            >导出</el-button
+            >新增库存信息</el-button
           >
         </el-col>
       </el-row>
 
       <el-table v-loading="loading" :data="InventoriesList" border class="mt20">
-        <!-- <el-table-column label="库存ID" prop="id" v-if="true" /> -->
+        <el-table-column label="商品ID" prop="merchandiseId" />
         <el-table-column
           label="商品"
           prop="merchandise"
@@ -73,7 +65,13 @@
         >
           <template #default="scope">
             <div class="merchandise-info">
-              <img :src="scope.row.merchandise.image" alt="" />
+              <el-image
+              :src="scope.row.merchandise.image"
+              fit="cover"
+              :style="`width:80px;height:80px;`"
+              :preview-src-list="[scope.row.merchandise.image]"
+              preview-teleported
+            />
               <div class="merchandise-info-content">
                 <p>名称: {{ scope.row.merchandise.name }}</p>
                 <p>型号: {{ scope.row.merchandise.type }}</p>
@@ -85,7 +83,7 @@
         </el-table-column>
         <el-table-column
           label="所属客户"
-          prop="merchandise"
+          prop="userId"
           align="center"
           width="150"
         >
@@ -100,16 +98,27 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column
-          label="最近记录"
-          prop="remark"
-          align="center"
-          width="250"
-        />
+
         <el-table-column label="库存数量" prop="number" align="center" />
 
         <el-table-column label="单位" prop="unit" align="center" />
 
+        <el-table-column label="入库时间" prop="entryTime" align="center" >
+          <template #default="scope">
+            {{ dayjs(scope.row.entryTime).format('YYYY-MM-DD HH:mm:ss') }}
+          </template>
+        </el-table-column>
+        <el-table-column label="更新时间" prop="createTime" align="center" >
+          <template #default="scope">
+            {{ scope.row.updateTime || scope.row.createTime }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="备注"
+          prop="remark"
+          align="center"
+          width="250"
+        />
         <el-table-column
           label="操作"
           align="center"
@@ -122,7 +131,7 @@
               icon="Edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['wms:inventories:edit']"
-              >入库</el-button
+              >修改</el-button
             >
           </template>
         </el-table-column>
@@ -140,7 +149,7 @@
     </el-card>
     <!-- 添加或修改商品库存表对话框 -->
     <el-dialog
-      title="新增库存"
+      title="修改库存信息"
       v-model="open"
       width="500px"
       append-to-body
@@ -152,11 +161,12 @@
         :rules="rules"
         label-width="80px"
       >
-        <el-form-item label="入库数量" prop="quantity">
-          <el-input-number v-model="quantity" placeholder="请输入数量" />
+        <el-form-item label="库存数量" prop="quantity">
+          <el-input-number v-model="form.number" placeholder="请输入数量" />
           <span style="margin: 0 5px"> </span>{{ form.unit }}
         </el-form-item>
-        <!-- <el-form-item label="备注" prop="remark">
+
+        <el-form-item label="备注" prop="remark">
           <el-input
             v-model="form.remark"
             type="textarea"
@@ -164,7 +174,7 @@
             rows="4"
             maxlength="100"
           />
-        </el-form-item> -->
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -277,12 +287,11 @@ function handleAdd() {
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset();
-  const _id = row.id || ids.value;
-  getInventories(_id).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = "修改商品库存表";
+  nextTick(() => {
+    form.value = row;
   });
+  open.value = true;
+  title.value = "修改商品库存表";
 }
 
 /** 提交按钮 */
@@ -291,9 +300,6 @@ function submitForm() {
     if (valid) {
       buttonLoading.value = true;
       if (form.value.id != null) {
-        form.value.number =
-          parseInt(form.value.number) + parseInt(quantity.value);
-        form.value.remark = `入库${quantity.value}${form.value.unit}`;
         updateInventories(form.value)
           .then((response) => {
             proxy.$modal.msgSuccess("修改成功");
@@ -338,7 +344,7 @@ getList();
   .merchandise-info {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-around;
     img {
       width: 80px;
       height: 80px;
@@ -348,6 +354,7 @@ getList();
       display: flex;
       flex-direction: column;
       align-items: flex-start;
+      min-width: 40%;
     }
     p {
       margin: 0;

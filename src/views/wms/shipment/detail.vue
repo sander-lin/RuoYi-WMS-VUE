@@ -120,7 +120,7 @@
           <el-timeline-item
             v-for="(activity, index) in activities"
             :key="index"
-            :timestamp="new Date(activity.logisticsDate).toLocaleString()"
+            :timestamp="dayjs(activity.logisticsDate).format('YYYY-MM-DD HH:mm:ss')"
             @mouseenter="() => editLogisticsId = activity.id"
             @mouseleave="editLogisticsId = ''"
           >
@@ -214,6 +214,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
 import mapData from "../../../utils/mapData";
+import dayjs from "dayjs";
 
 const { proxy } = getCurrentInstance();
 const { label_type, order_option, shipping_status, noticeStatusMap } = mapData;

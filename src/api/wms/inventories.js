@@ -9,6 +9,15 @@ export function listInventories(query) {
   })
 }
 
+// 获取可添加的库存商品信息
+export function addableInventoryMerchandise(query) {
+  return request({
+    url: '/wms/merchandise/getAddableInventoryMerchandise',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询商品库存表详细
 export function getInventories(id) {
   return request({
