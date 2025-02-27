@@ -99,8 +99,8 @@
                     v-model="row.quantityShipped"
                     placeholder="数量"
                     :min="1"
-                    :max="row.quantityNotice - row.totalQuantityShipped"
                     :precision="0"
+                    @before-input="handleBeforeInput"
                     @change="handleChangeQuantity(row)"
                     @blur="handleChangeQuantity(row)"
                   ></el-input-number>
@@ -211,6 +211,7 @@ const initFormData = {
   deliveryMethod: "",
   merchandises: [],
 };
+const exceedWarning = ref(false);
 const data = reactive({
   form: { ...initFormData },
   queryParams: {
@@ -225,7 +226,9 @@ const data = reactive({
   },
 });
 const { form, rules } = toRefs(data);
-
+const handleBeforeInput = (value) => {
+  
+};
 const cancel = async () => {
   await proxy?.$modal.confirm("确认取消编辑发货单吗？");
   close();
@@ -332,6 +335,10 @@ const loadDetail = (id) => {
 };
 
 const handleChangeQuantity = (row) => {
+  
+  // if(row.quantityShipped > row.quantityNotice - row.totalQuantityShipped && !exceedWarning.value) {
+  //   ElMessage.warning("发货数量已超过未发货数量");
+  // }
   if (row.quantityShipped > 0) {
     multipleTable.value.toggleRowSelection(row, true);
   } else {

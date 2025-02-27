@@ -93,7 +93,6 @@
                     v-model="row.quantityNotice"
                     placeholder="数量"
                     :min="1"
-                    :max="row.quantityRequired - row.totalQuantityNotice"
                     :precision="0"
                     @change="handleChangeQuantity(row)"
                     @blur="handleChangeQuantity(row)"
@@ -269,7 +268,7 @@ const doSave = async (NoticeStatus) => {
       updateShipmentNotice(params).then((res) => {
         if (res.code === 200) {
           ElMessage.success(res.msg);
-          NoticeStatus === noticeStatusMap.cao_gao
+          NoticeStatus === noticeStatusMap.value.cao_gao
             ? close("/order/draft")
             : proxy.$router.go(-1);
         } else {
@@ -277,7 +276,7 @@ const doSave = async (NoticeStatus) => {
         }
       });
     } else {
-      if (NoticeStatus === noticeStatusMap.cao_gao) {
+      if (NoticeStatus === noticeStatusMap.value.cao_gao) {
         createDraftShipmentNotice(params).then((res) => {
           if (res.code === 200) {
             ElMessage.success(res.msg);
@@ -302,11 +301,11 @@ const doSave = async (NoticeStatus) => {
 
 const saveAsDraft = async () => {
   await proxy?.$modal.confirm("确认保存为草稿吗？");
-  doSave(noticeStatusMap.cao_gao);
+  doSave(noticeStatusMap.value.cao_gao);
 };
 const AddShipmentNotice = async () => {
   await proxy?.$modal.confirm("确认发布吗？");
-  doSave(noticeStatusMap.wei_fa_huo);
+  doSave(noticeStatusMap.value.wei_fa_huo);
 };
 
 const route = useRoute();

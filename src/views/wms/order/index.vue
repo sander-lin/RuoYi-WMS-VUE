@@ -325,7 +325,6 @@ function resetQuery() {
 }
 
 const handleSelectionChange = (val) => {
-  console.log(val)
   multipleSelection.value = val
 }
 

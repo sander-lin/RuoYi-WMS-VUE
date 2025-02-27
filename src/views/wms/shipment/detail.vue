@@ -120,7 +120,7 @@
           <el-timeline-item
             v-for="(activity, index) in activities"
             :key="index"
-            :timestamp="new Date(activity.logisticsDate).toLocaleString()"
+            :timestamp="dayjs(activity.logisticsDate).format('YYYY-MM-DD HH:mm:ss')"
             @mouseenter="() => editLogisticsId = activity.id"
             @mouseleave="editLogisticsId = ''"
           >
@@ -214,6 +214,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
 import mapData from "../../../utils/mapData";
+import dayjs from "dayjs";
 
 const { proxy } = getCurrentInstance();
 const { label_type, order_option, shipping_status, noticeStatusMap } = mapData;
@@ -225,10 +226,10 @@ const logisticsTitle = ref('增加最新物流信息')
 const isAddLogistics = ref(true)
 
 const editAble = computed(() => {
-  return !isBuyer && form.value.status !== noticeStatusMap.yi_wan_cheng;
+  return !isBuyer && form.value.status !== noticeStatusMap.value.yi_wan_cheng;
 });
 const receiptAble = computed(() => {
-  return isBuyer && form.value.status === noticeStatusMap.quan_bu_fa_huo;
+  return isBuyer && form.value.status === noticeStatusMap.value.quan_bu_fa_huo;
 });
 const loading = ref(false);
 const initFormData = {
@@ -372,14 +373,14 @@ const { form } = toRefs(data);
 
 const save = (status) => {
   ElMessageBox.confirm(
-    status === noticeStatusMap.quan_bu_fa_huo ? "确认收货吗？" : "确定保存吗？"
+    status === noticeStatusMap.value.quan_bu_fa_huo ? "确认收货吗？" : "确定保存吗？"
   )
     .then(() => {
       loading.value = true;
       const data = {
         id: form.value.id,
         status:
-          status === noticeStatusMap.quan_bu_fa_huo
+          status === noticeStatusMap.value.quan_bu_fa_huo
             ? status
             : form.value.status,
         deliveryMethod: form.value.deliveryMethod,
@@ -390,7 +391,7 @@ const save = (status) => {
           ElMessage({
             type: "success",
             message:
-              status === noticeStatusMap.quan_bu_fa_huo
+              status === noticeStatusMap.value.quan_bu_fa_huo
                 ? "确认收货成功"
                 : "修改成功",
           });

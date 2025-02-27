@@ -246,7 +246,7 @@ const handleChangeStatus = (row) => {
     .then(() => {
       const data = {
         id: row.id,
-        status: noticeStatusMap.yi_guan_bi,
+        status: noticeStatusMap.value.yi_guan_bi,
         userId: row.userId,
         orderId: row.orderId,
         tag: row.tag,

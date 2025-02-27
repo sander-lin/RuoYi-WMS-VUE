@@ -45,6 +45,8 @@ import TreeSelect from '@/components/TreeSelect'
 import DictTag from '@/components/DictTag'
 // 打印插件
 import { hiPrintPlugin } from 'vue-plugin-hiprint';
+// 时间处理
+import dayjs from 'dayjs'
 
 const app = createApp(App)
 
@@ -61,6 +63,7 @@ app.config.globalProperties.addDateRange = addDateRange
 app.config.globalProperties.selectDictLabel = selectDictLabel
 app.config.globalProperties.selectDictLabels = selectDictLabels
 app.config.globalProperties.isBuyer = isBuyer
+app.config.globalProperties.dayjs = dayjs
 
 // 全局组件挂载
 app.component('DictTag', DictTag)

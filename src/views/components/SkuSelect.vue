@@ -41,6 +41,7 @@
       v-loading="loading"
       ref="skuSelectFormRef"
       cell-class-name="my-cell"
+      @selection-change="handleSelectionChange"
     >
       <el-table-column
         type="selection"
@@ -48,13 +49,12 @@
         v-if="!singleSelect"
         :reserve-selection="true"
       >
-        <template #default="{ row }">
+        <!-- <template #default="{ row }">
           <el-checkbox
             v-model="row.isSelected"
             :disabled="selectedItem?.includes(row.id)"
-            @change="handleSelectionChange(row)"
           />
-        </template>
+        </template> -->
       </el-table-column>
       <el-table-column label="商品编号" prop="id" v-if="true" />
       <el-table-column label="FNSKU" prop="fnsku" />
@@ -118,7 +118,7 @@
     </template>
   </el-drawer>
 </template>
-<script setup lang="ts" name="SkuSelect">
+<script setup name="SkuSelect">
 import {
   computed,
   getCurrentInstance,
@@ -128,42 +128,31 @@ import {
   nextTick,
 } from "vue";
 import { ElForm } from "element-plus";
-import { getRowspanMethod } from "@/utils/getRowSpanMethod";
-import { listItemSkuPage } from "@/api/wms/itemSku";
-import { useRouter } from "vue-router";
 import { useWmsStore } from "@/store/modules/wms";
 import useUserStore from "@/store/modules/user";
 import { listMerchandise } from "@/api/wms/merchandise";
 
 const instance = getCurrentInstance();
 const proxy = instance ? instance.proxy : null;
-const { userOptions, getUserList } = useWmsStore();
-const userStore = useUserStore();
-const spanMethod = computed(() => getRowspanMethod(list.value, ["itemId"]));
-const router = useRouter();
+const { userOptions } = useWmsStore();
 const loading = ref(false);
-const deptOptions = ref([]);
 const query = reactive({
   name: "",
   fnsku: "",
 });
 const selectItemSkuVoCheck = ref([]);
-const skuSelectFormRef = ref<ElForm | null>(null);
+const skuSelectFormRef = ref(null);
 const total = ref(0);
 const pageReq = reactive({
   page: 1,
   size: 10,
 });
-const list = ref<any[]>([]);
+const list = ref([]);
 const rightList = ref([]);
 const rightListKeySet = computed(() => {
   const set = new Set();
   rightList.value.forEach((it) => set.add(it.id));
   return set;
-});
-
-const editableList = computed(() => {
-  return list.value.filter((it) => !rightListKeySet.value.has(it.id));
 });
 
 const loadAll = () => {
@@ -175,7 +164,8 @@ const loadAll = () => {
     pageSize: pageReqCopy.size,
   };
   loading.value = true;
-  listMerchandise(data)
+  props
+    .getListRequest(data)
     .then((res) => {
       const content = [...res.rows];
       list.value = content.map((item) => ({
@@ -186,7 +176,7 @@ const loadAll = () => {
     })
     .finally(() => (loading.value = false));
 };
-const getRowKey = (row: any) => {
+const getRowKey = (row) => {
   return row.id;
 };
 const getList = () => {
@@ -195,7 +185,7 @@ const getList = () => {
     pageNum: pageReq.page,
     pageSize: pageReq.size,
   };
-  listMerchandise(data).then((res) => {
+  props.getListRequest(data).then((res) => {
     const content = [...res.rows];
     list.value = content.map((item) => ({
       ...item,
@@ -217,23 +207,27 @@ const goCreateItem = () => {
   window.open(data.href, "_blank");
 };
 // 定义props
-const props = defineProps<{
-  modelValue?: boolean;
-  size: number | string;
-  singleSelect: boolean;
-  selectedItem: any;
-}>();
+const props = defineProps({
+  modelValue: Boolean,
+  size: Number | String,
+  singleSelect: Boolean,
+  selectedItem: null,
+  getListRequest: {
+    type: Function,
+    default: listMerchandise,
+  },
+});
 
 const show = computed(() => {
   return props.modelValue;
 });
 
 // 定义事件
-const emit = defineEmits<{
-  (e: "handleCancelClick");
-  (e: "handleOkClick", value);
-  (e: "handleSingleOkClick", value);
-}>();
+const emit = defineEmits([
+  "handleCancelClick",
+  "handleOkClick",
+  "handleSingleOkClick",
+]);
 
 function handleCancelClick() {
   emit("handleCancelClick");
@@ -250,14 +244,7 @@ function handleOkClick() {
 }
 /** 多选框选中数据 */
 const handleSelectionChange = (row) => {
-  if (row.isSelected) {
-    selectItemSkuVoCheck.value.push(row);
-  } else {
-    const index = selectItemSkuVoCheck.value.indexOf(row);
-    if (index !== -1) {
-      selectItemSkuVoCheck.value.splice(index, 1);
-    }
-  }
+  selectItemSkuVoCheck.value = row;
 };
 
 function clearQuantity() {
