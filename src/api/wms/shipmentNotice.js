@@ -35,6 +35,15 @@ export function addShipmentNotice(data) {
   })
 }
 
+// 修改发货请求通知单状态
+export function updateShipmentNoticeStatus(data) {
+  return request({
+    url: '/wms/shipmentNotice/status',
+    method: 'put',
+    data: data
+  })
+}
+
 // 修改发货请求通知单
 export function updateShipmentNotice(data) {
   return request({

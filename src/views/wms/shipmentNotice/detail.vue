@@ -326,10 +326,10 @@ const close = () => {
 const showAddItem = () => {
   if (
     [
-      noticeStatusMap.quan_bu_fa_huo,
-      noticeStatusMap.yi_wan_cheng,
-      noticeStatusMap.yi_guan_bi,
-    ].includes(form.status)
+      noticeStatusMap.value.quan_bu_fa_huo,
+      noticeStatusMap.value.yi_wan_cheng,
+      noticeStatusMap.value.yi_guan_bi,
+    ].includes(form.value.status)
   ) {
     proxy.$modal.confirm("该通知单已全部发货，是否继续发货？").then(() => {
       proxy.$router.push({
@@ -337,6 +337,11 @@ const showAddItem = () => {
         query: { shipmentId: form.value.id },
       });
     });
+  } else {
+    proxy.$router.push({
+        path: "/shipment/create",
+        query: { shipmentId: form.value.id },
+      });
   }
 };
 

@@ -183,7 +183,6 @@
             type="primary"
             icon="Edit"
             @click="handleEdit(scope.row)"
-            v-hasPermi="['wms:shipmentNotice:edit']"
             >编辑</el-button
           >
           <el-button
@@ -191,14 +190,12 @@
             type="primary"
             icon="Edit"
             @click="handlePublish(scope.row)"
-            v-hasPermi="['wms:shipmentNotice:edit']"
             >发布</el-button
           >
           <el-button
             link
             type="primary"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['wms:shipmentNotice:remove']"
             >删除</el-button
           >
         </template>
@@ -218,10 +215,10 @@
 
 <script setup name="Order">
 import { ElMessageBox, ElMessage } from "element-plus";
-import { listDraftOrder, delOrder, publishDraftOrder } from "@/api/wms/order";
+import { listDraftOrder, delOrder, updateOrderStatus } from "@/api/wms/order";
 import {
   listShipmentNoticeDraft,
-  updateShipmentNotice,
+  updateShipmentNoticeStatus,
   delShipmentNotice,
 } from "@/api/wms/shipmentNotice";
 import { useWmsStore } from "@/store/modules/wms";
@@ -278,14 +275,9 @@ const handleUpdate = (row) => {
   if (currentTab.value === "orderDraft") {
     const data = {
       id: row.id,
-      status: orderStatusMap.mai_fu_zhong,
-      userId: row.userId,
-      type: row.type,
-      remark: row.remark,
-      totalAmount: row.totalAmount,
-      merchandises: row.merchandises,
+      status: orderStatusMap.value.dai_que_ding,
     };
-    publishDraftOrder(data).then((response) => {
+    updateOrderStatus(data).then((response) => {
       ElMessage({
         type: "success",
         message: "发布成功",
@@ -296,14 +288,9 @@ const handleUpdate = (row) => {
   } else if (currentTab.value === "shipmentNoticeDraft") {
     const data = {
       id: row.id,
-      status: noticeStatusMap.wei_fa_huo,
-      userId: row.userId,
-      orderId: row.orderId,
-      tag: row.tag,
-      remark: row.remark,
-      deliveryMethod: row.deliveryMethod,
+      status: noticeStatusMap.value.wei_fa_huo,
     };
-    updateShipmentNotice(data).then((response) => {
+    updateShipmentNoticeStatus(data).then((response) => {
       ElMessage({
         type: "success",
         message: "发布成功",

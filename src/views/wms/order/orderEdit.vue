@@ -142,7 +142,7 @@
         :selected-item="form.merchandises.map((it) => it.id)"
         @handleOkClick="handleOkClick"
         @handleCancelClick="skuSelectShow = false"
-        :size="'80%'"
+        size="80%"
       />
     </div>
     <div class="footer-global">
@@ -165,13 +165,12 @@ import {
   onMounted,
   reactive,
   ref,
-  toRef,
   toRefs,
-  watch,
 } from "vue";
 import {
   addOrder,
   updateOrder,
+  publishDraftOrder,
   getOrder,
   createDraftOrder,
 } from "@/api/wms/order";
@@ -191,7 +190,6 @@ const currentPath = computed(() => {
   return router.currentRoute.value.path;
 });
 const userStore = useUserStore();
-const mode = ref(false);
 const loading = ref(false);
 const initFormData = {
   id: undefined,
@@ -279,7 +277,6 @@ const doSave = async (OrderStatus) => {
         merchandiseId: it.id,
         quantityRequired: it.quantityRequired,
         labelOption: it.labelOption.join(","),
-        price: it.price,
       };
     });
 
@@ -288,22 +285,33 @@ const doSave = async (OrderStatus) => {
       userId: userStore.id,
       type: form.value.type,
       remark: form.value.remark,
-      totalAmount: totalPrice.value,
       merchandises: merchandises,
     };
     if (params.id) {
-      updateOrder(params).then((res) => {
-        if (res.code === 200) {
-          ElMessage.success(res.msg);
-          OrderStatus === orderStatusMap.cao_gao
-            ? close("/order/draft")
-            : close();
-        } else {
-          ElMessage.error(res.msg);
-        }
-      });
+      if(OrderStatus === orderStatusMap.value.cao_gao) {
+        updateOrder(params).then((res) => {
+          if (res.code === 200) {
+            ElMessage.success(res.msg);
+            OrderStatus === orderStatusMap.value.cao_gao
+              ? close("/order/draft")
+              : close();
+          } else {
+            ElMessage.error(res.msg);
+          }
+        });
+      } else{
+        publishDraftOrder(params).then((res) => {
+          if (res.code === 200) {
+            ElMessage.success(res.msg);
+            close("/order/draft");
+          } else {
+            ElMessage.error(res.msg);
+          }
+        });
+      }
+
     } else {
-      if (OrderStatus === orderStatusMap.cao_gao) {
+      if (OrderStatus === orderStatusMap.value.cao_gao) {
         createDraftOrder(params).then((res) => {
           if (res.code === 200) {
             ElMessage.success(res.msg);
@@ -329,15 +337,15 @@ const doSave = async (OrderStatus) => {
 
 const saveAsDraft = async () => {
   await proxy?.$modal.confirm("确认保存为草稿吗？");
-  doSave(orderStatusMap.cao_gao);
+  doSave(orderStatusMap.value.cao_gao);
 };
 const AddOrder = async () => {
   // if (totalPrice.value > userStore.balance) {
   //   await proxy?.$modal.confirm("余额不足, 是否先保存为草稿？");
-  //   doSave(orderStatusMap.cao_gao);
+  //   doSave(orderStatusMap.value.cao_gao);
   // } else {
     await proxy?.$modal.confirm("确认发布吗？");
-    doSave(orderStatusMap.mai_fu_zhong);
+    doSave(orderStatusMap.value.dai_que_ding);
   // }
 };
 
